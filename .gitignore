@@ -1,0 +1,10 @@
+.fr.yaml
+playwright-mcp/
+.playwright-mcp/
+*.png
+*.jpg
+*.tar.gz
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,462 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<WorkBook xmlVersion="20211223" releaseVersion="11.5.0">
+<ReportWebAttr>
+<ServerPrinter/>
+<WebWriteContent>
+<Listener event="afterload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content><![CDATA[
+(() => {
+  
+  (function() {
+    "use strict";
+    var PATH = {
+      currentDir: (function() {
+        var name = FR.remoteEvaluate("=reportName");
+        return name.substring(0, name.lastIndexOf("/") + 1);
+      })(),
+      apiBase: (function() {
+        var servletURL = FR.remoteEvaluate("=servletURL");
+        var parts = servletURL.split("/");
+        return "/" + parts[1] + "/" + parts[2];
+      })(),
+      getDataTemplate: function(filename) {
+        return this.currentDir.replace("/pages/", "/data/") + filename;
+      },
+      getTemplatePath: function(filename) {
+        return this.currentDir + filename;
+      }
+    };
+    var hideStyle = document.createElement("style");
+    hideStyle.innerHTML = ".fr-report{position:absolute!important;left:-9999px!important;visibility:hidden!important}.content-container,.fr-content,.reportPane{height:0!important;overflow:hidden!important;pointer-events:none!important}body>.textbox-container,body>#textboxContainer,body>.widget-container{display:none!important}";
+    document.head.appendChild(hideStyle);
+    document.body.setAttribute(
+      "style",
+      "margin:0;padding:0;min-height:100vh;box-sizing:border-box;overflow-y:auto;"
+    );
+    var appRoot = document.createElement("div");
+    appRoot.id = "app-root";
+    document.body.insertBefore(appRoot, document.body.firstChild);
+    function App() {
+      var apiType = React.useState("/api/data");
+      var activeApi = apiType[0];
+      var setActiveApi = apiType[1];
+      var cptPath = React.useState("");
+      var cptPathValue = cptPath[0];
+      var setCptPath = cptPath[1];
+      var datasetName = React.useState("");
+      var datasetNameValue = datasetName[0];
+      var setDatasetName = datasetName[1];
+      var targetUrl = React.useState("");
+      var targetUrlValue = targetUrl[0];
+      var setTargetUrl = targetUrl[1];
+      var requestBody = React.useState("{}");
+      var requestBodyValue = requestBody[0];
+      var setRequestBody = requestBody[1];
+      var params = React.useState([
+        { name: "p_page", value: "1", type: "String" },
+        { name: "p_pagesize", value: "10", type: "String" }
+      ]);
+      var paramsValue = params[0];
+      var setParams = params[1];
+      var result = React.useState(null);
+      var resultValue = result[0];
+      var setResult = result[1];
+      var error = React.useState(null);
+      var errorValue = error[0];
+      var setError = error[1];
+      var loading = React.useState(false);
+      var loadingValue = loading[0];
+      var setLoading = loading[1];
+      var duration = React.useState(null);
+      var durationValue = duration[0];
+      var setDuration = duration[1];
+      var formatJson = function(obj) {
+        return JSON.stringify(obj, null, 2);
+      };
+      var handleApiTypeChange = function(type) {
+        setActiveApi(type);
+        setCptPath("");
+        setDatasetName("");
+        setTargetUrl("");
+        setRequestBody("{}");
+        setParams([
+          { name: "p_page", value: "1", type: "String" },
+          { name: "p_pagesize", value: "10", type: "String" }
+        ]);
+        setResult(null);
+        setError(null);
+        setDuration(null);
+      };
+      var handleAddParam = function() {
+        var newParams = paramsValue.concat([{ name: "", value: "", type: "String" }]);
+        setParams(newParams);
+      };
+      var handleDeleteParam = function(index) {
+        var newParams = paramsValue.filter(function(_, i) {
+          return i !== index;
+        });
+        setParams(newParams);
+      };
+      var handleParamChange = function(index, field, fieldValue) {
+        var newParams = paramsValue.map(function(p, i) {
+          if (i === index) {
+            var newP = {};
+            newP[field] = fieldValue;
+            return Object.assign({}, p, newP);
+          }
+          return p;
+        });
+        setParams(newParams);
+      };
+      var handleSubmit = function() {
+        setLoading(true);
+        setResult(null);
+        setError(null);
+        setDuration(null);
+        var startTime = Date.now();
+        var apiUrl = PATH.apiBase + activeApi;
+        var requestData;
+        if (activeApi === "/api/data") {
+          var filteredParams = paramsValue.filter(function(p) {
+            return p.name && p.name.trim().length > 0;
+          });
+          requestData = {
+            report_path: cptPathValue,
+            datasource_name: datasetNameValue,
+            page_number: -1,
+            page_size: -1,
+            parameters: filteredParams.map(function(p) {
+              return { name: p.name, type: p.type, value: p.value };
+            })
+          };
+        } else {
+          var filteredParamsForReport = paramsValue.filter(function(p) {
+            return p.name && p.name.trim().length > 0;
+          });
+          requestData = {
+            report_path: "api/api_agent.cpt",
+            start_page: 1,
+            end_page: 1,
+            parameters: [
+              { name: "p_url", type: "String", value: targetUrlValue },
+              { name: "p_body", type: "String", value: requestBodyValue }
+            ].concat(filteredParamsForReport.map(function(p) {
+              return { name: p.name, type: p.type, value: p.value };
+            }))
+          };
+        }
+        fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestData)
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          var elapsed = Date.now() - startTime;
+          setDuration(elapsed);
+          if (data.err_code !== void 0 && data.err_code !== 0) {
+            setError({ type: "fr", message: data.err_msg || "\u5E06\u8F6F\u5C42\u9519\u8BEF", data });
+          } else if (data.data && data.data[0] && data.data[0].A1) {
+            var a1 = data.data[0].A1;
+            if (typeof a1 === "string" && a1.indexOf("error") !== -1) {
+              var errorObj;
+              try {
+                errorObj = JSON.parse(a1);
+              } catch (e) {
+                errorObj = { error: a1 };
+              }
+              setError({ type: "proxy", message: "\u4EE3\u7406\u5C42\u9519\u8BEF", data: errorObj });
+            } else if (typeof a1 === "string") {
+              try {
+                var parsed = JSON.parse(a1);
+                if (parsed.success === false) {
+                  setError({ type: "biz", message: parsed.err_msg || "\u4E1A\u52A1\u5C42\u9519\u8BEF", data: parsed });
+                } else {
+                  setResult({ data: parsed, raw: a1 });
+                }
+              } catch (e) {
+                setResult({ data: a1, raw: a1 });
+              }
+            } else {
+              setResult({ data: a1, raw: JSON.stringify(a1) });
+            }
+          } else if (data.error) {
+            setError({ type: "network", message: "\u7F51\u7EDC\u9519\u8BEF", data });
+          } else {
+            setResult({ data, raw: JSON.stringify(data) });
+          }
+          setLoading(false);
+        }).catch(function(err) {
+          var elapsed = Date.now() - startTime;
+          setDuration(elapsed);
+          setError({ type: "network", message: "\u7F51\u7EDC\u8BF7\u6C42\u5931\u8D25", data: { error: err.message } });
+          setLoading(false);
+        });
+      };
+      return  React.createElement("div", { style: { padding: "24px", maxWidth: "900px", margin: "0 auto" } },  React.createElement("div", { style: { marginBottom: "24px" } },  React.createElement("h1", { style: { margin: "0 0 8px 0", fontSize: "24px", fontWeight: "bold" } }, "API Tester"),  React.createElement("p", { style: { margin: 0, color: "#666" } }, "\u6570\u636E\u5C42\u63A5\u53E3\u6D4B\u8BD5\u5DE5\u5177 -支\u6301 /api/data和 /api/report")),  React.createElement("div", { style: { marginBottom: "16px" } },  React.createElement(
+        "button",
+        {
+          onClick: function() {
+            handleApiTypeChange("/api/data");
+          },
+          style: {
+            padding: "8px 16px",
+            marginRight: "8px",
+            border: "1px solid " + (activeApi === "/api/data" ? "#1890ff" : "#d9d9d9"),
+            background: activeApi === "/api/data" ? "#1890ff" : "#fff",
+            color: activeApi === "/api/data" ? "#fff" : "#333",
+            borderRadius: "4px",
+            cursor: "pointer"
+          }
+        },
+        "/api/data"
+      ),  React.createElement(
+        "button",
+        {
+          onClick: function() {
+            handleApiTypeChange("/api/report");
+          },
+          style: {
+            padding: "8px 16px",
+            border: "1px solid " + (activeApi === "/api/report" ? "#1890ff" : "#d9d9d9"),
+            background: activeApi === "/api/report" ? "#1890ff" : "#fff",
+            color: activeApi === "/api/report" ? "#fff" : "#333",
+            borderRadius: "4px",
+            cursor: "pointer"
+          }
+        },
+        "/api/report"
+      )),  React.createElement("div", { style: {
+        background: "#f5f5f5",
+        padding: "24px",
+        borderRadius: "8px",
+        marginBottom: "16px"
+      } },  React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "\u8BF7\u6C42\u914D\u7F6E"), activeApi === "/api/data" ?  React.createElement("div", null,  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "4px", fontWeight: 500 } }, "CPT路\u5F84"),  React.createElement(
+        "input",
+        {
+          type: "text",
+          value: cptPathValue,
+          onChange: function(e) {
+            setCptPath(e.target.value);
+          },
+          placeholder: "\u5982\uFF1Ajiangcheng/borrow/data/borrow_data.cpt",
+          style: { width: "100%", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", boxSizing: "border-box" }
+        }
+      )),  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "4px", fontWeight: 500 } }, "\u6570\u636E\u96C6\u540D\u79F0"),  React.createElement(
+        "input",
+        {
+          type: "text",
+          value: datasetNameValue,
+          onChange: function(e) {
+            setDatasetName(e.target.value);
+          },
+          placeholder: "\u5982\uFF1Aequipment_qry",
+          style: { width: "100%", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", boxSizing: "border-box" }
+        }
+      )),  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "4px", fontWeight: 500 } }, "\u5206\u9875\u53C2\u6570\uFF08\u56FA\u5B9A -1\uFF09"),  React.createElement("div", { style: { display: "flex", gap: "8px" } },  React.createElement(
+        "input",
+        {
+          type: "text",
+          value: "-1",
+          disabled: true,
+          style: { width: "120px", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", background: "#f0f0f0" }
+        }
+      ),  React.createElement(
+        "input",
+        {
+          type: "text",
+          value: "-1",
+          disabled: true,
+          style: { width: "120px", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", background: "#f0f0f0" }
+        }
+      )))) :  React.createElement("div", null,  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "4px", fontWeight: 500 } }, "\u76EE\u6807 URL"),  React.createElement(
+        "input",
+        {
+          type: "text",
+          value: targetUrlValue,
+          onChange: function(e) {
+            setTargetUrl(e.target.value);
+          },
+          placeholder: "\u5982\uFF1Ahttps://api.example.com/endpoint",
+          style: { width: "100%", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", boxSizing: "border-box" }
+        }
+      )),  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "4px", fontWeight: 500 } }, "\u8BF7\u6C42\u4F53"),  React.createElement(
+        "textarea",
+        {
+          value: requestBodyValue,
+          onChange: function(e) {
+            setRequestBody(e.target.value);
+          },
+          placeholder: "{}",
+          rows: "4",
+          style: { width: "100%", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px", boxSizing: "border-box", fontFamily: "monospace" }
+        }
+      ))),  React.createElement("div", { style: { marginBottom: "12px" } },  React.createElement("label", { style: { display: "block", marginBottom: "8px", fontWeight: 500 } }, "\u81EA\u5B9A\u4E49\u53C2\u6570"), paramsValue.map(function(param, index) {
+        return  React.createElement("div", { key: index, style: { display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" } },  React.createElement(
+          "input",
+          {
+            type: "text",
+            value: param.name,
+            onChange: function(e) {
+              handleParamChange(index, "name", e.target.value);
+            },
+            placeholder: "\u53C2\u6570\u540D",
+            style: { flex: 1, padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px" }
+          }
+        ),  React.createElement(
+          "input",
+          {
+            type: "text",
+            value: param.value,
+            onChange: function(e) {
+              handleParamChange(index, "value", e.target.value);
+            },
+            placeholder: "\u53C2\u6570\u503C",
+            style: { flex: 1, padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px" }
+          }
+        ),  React.createElement(
+          "select",
+          {
+            value: param.type,
+            onChange: function(e) {
+              handleParamChange(index, "type", e.target.value);
+            },
+            style: { width: "100px", padding: "8px", border: "1px solid #d9d9d9", borderRadius: "4px" }
+          },
+           React.createElement("option", { value: "String" }, "String"),
+           React.createElement("option", { value: "Integer" }, "Integer"),
+           React.createElement("option", { value: "Double" }, "Double")
+        ),  React.createElement(
+          "button",
+          {
+            onClick: function() {
+              handleDeleteParam(index);
+            },
+            style: { padding: "8px 12px", border: "1px solid #ff4d4f", background: "#fff", color: "#ff4d4f", borderRadius: "4px", cursor: "pointer" }
+          },
+          "\u5220\u9664"
+        ));
+      }),  React.createElement(
+        "button",
+        {
+          onClick: handleAddParam,
+          style: { padding: "8px 16px", border: "1px solid #1890ff", background: "#fff", color: "#1890ff", borderRadius: "4px", cursor: "pointer" }
+        },
+        "+添\u52A0\u53C2\u6570"
+      )),  React.createElement(
+        "button",
+        {
+          onClick: handleSubmit,
+          disabled: loadingValue,
+          style: {
+            padding: "10px 24px",
+            border: "none",
+            background: loadingValue ? "#d9d9d9" : "#1890ff",
+            color: "#fff",
+            borderRadius: "4px",
+            cursor: loadingValue ? "not-allowed" : "pointer",
+            fontSize: "14px"
+          }
+        },
+        loadingValue ? "\u53D1\u9001\u4E2D..." : "\u53D1\u9001\u8BF7\u6C42"
+      )),  React.createElement("div", { style: {
+        background: "#f5f5f5",
+        padding: "24px",
+        borderRadius: "8px"
+      } },  React.createElement("h3", { style: { marginTop: 0, marginBottom: "16px" } }, "\u8FD4\u56DE\u7ED3\u679C", durationValue !== null ?  React.createElement("span", { style: { fontSize: "14px", fontWeight: "normal", color: "#666", marginLeft: "12px" } }, "\u8017\u65F6: ", durationValue, "ms") : null), errorValue ?  React.createElement("div", { style: {
+        background: "#fff2f0",
+        border: "1px solid #ffccc7",
+        padding: "16px",
+        borderRadius: "4px"
+      } },  React.createElement("p", { style: { color: "#ff4d4f", margin: "0 0 8px 0", fontWeight: 500 } }, "\u9519\u8BEF\uFF1A", errorValue.message),  React.createElement("pre", { style: { margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" } }, formatJson(errorValue.data))) : resultValue ?  React.createElement("pre", { style: {
+        background: "#fafafa",
+        padding: "16px",
+        borderRadius: "4px",
+        margin: 0,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-all",
+        maxHeight: "400px",
+        overflow: "auto"
+      } }, formatJson(resultValue.data)) :  React.createElement("p", { style: { color: "#999", margin: 0 } }, "\u6682\u65E0\u8FD4\u56DE\u7ED3\u679C")));
+    }
+    ReactDOM.createRoot(document.getElementById("app-root")).render( React.createElement(App, null));
+  })();
+})();
+
+]]></Content>
+</JavaScript>
+</Listener>
+<ToolBars/>
+<EditRowColor setColor="false"/>
+<WebWrite SheetPosition="3"/>
+<RptLocation isShowAtLeft="true"/>
+<UnloadCheck check="false"/>
+<ShowWidgets/>
+<OtherAttr autoStash="false"/>
+</WebWriteContent>
+</ReportWebAttr>
+<Report class="com.fr.report.worksheet.WorkSheet" name="sheet1">
+<ReportPageAttr>
+<HR/>
+<FR/>
+<HC/>
+<FC/>
+<USE REPEAT="false" PAGE="false" WRITE="false"/>
+</ReportPageAttr>
+<ColumnPrivilegeControl/>
+<RowPrivilegeControl/>
+<RowHeight defaultValue="723900">
+723900,723900,723900,723900,723900,723900,723900,723900,723900,723900,723900</RowHeight>
+<ColumnWidth defaultValue="2743200">
+2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200</ColumnWidth>
+<CellElementList>
+<C c="0" r="0" s="0">
+<PrivilegeControl/>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+</CellElementList>
+<ReportAttrSet>
+<ReportSettings headerHeight="0" footerHeight="0">
+<PaperSetting/>
+<FollowingTheme background="true"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-1" hor="-1" ver="-1"/>
+</color>
+</Background>
+</ReportSettings>
+</ReportAttrSet>
+<PrivilegeControl/>
+</Report>
+<ReportParameterAttr>
+<Attributes showWindow="true" delayPlaying="true" windowPosition="1" align="0" useParamsTemplate="true" currentIndex="0"/>
+<PWTitle>
+参数</PWTitle>
+</ReportParameterAttr>
+<StyleList>
+<Style style_name="默认" full="true" border_source="-1" imageLayout="1">
+<FRFont name="simhei" style="0" size="72"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+</StyleList>
+<DesensitizationList/>
+<DesignerVersion DesignerVersion="LAA"/>
+<PreviewType PreviewType="1"/>
+<StrongestControlAttr class="com.fr.widgettheme.control.attr.WidgetDisplayEnhanceMarkAttr">
+<StrongestControlAttr widgetEnhance="false"/>
+</StrongestControlAttr>
+<TemplateThemeAttrMark class="com.fr.base.iofile.attr.TemplateThemeAttrMark">
+<TemplateThemeAttrMark name="经典浅灰" dark="false"/>
+</TemplateThemeAttrMark>
+<ForkIdAttrMark class="com.fr.base.iofile.attr.ForkIdAttrMark">
+<ForkIdAttrMark forkId="0b330108-1a1d-479a-b7d6-5ded33a7bd95"/>
+</ForkIdAttrMark>
+<TemplateIdAttMark class="com.fr.base.iofile.attr.TemplateIdAttMark">
+<TemplateIdAttMark TemplateId="0b330108-1a1d-479a-b7d6-5ded33a7bd95"/>
+</TemplateIdAttMark>
+</WorkBook>

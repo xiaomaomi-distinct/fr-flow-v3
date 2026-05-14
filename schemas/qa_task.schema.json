@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "qa_task",
+  "description": "测试任务单 JSON Schema (v3)",
+  "type": "object",
+  "required": ["project", "module", "test_cases"],
+
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "项目名称"
+    },
+    "module": {
+      "type": "string",
+      "description": "模块名称"
+    },
+    "version": {
+      "type": "string",
+      "description": "版本号",
+      "default": "1.0.0"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "创建时间 ISO 格式"
+    },
+    "base_url": {
+      "type": "string",
+      "description": "预览地址基础路径（可选，默认由 QA 根据 FR_SERVER_URL 拼接）"
+    },
+    "pages": {
+      "type": "object",
+      "description": "页面映射（页面名 → CPT 文件名）",
+      "additionalProperties": { "type": "string" }
+    },
+
+    "test_cases": {
+      "type": "array",
+      "description": "端到端功能测试用例",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "steps", "expected"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "用例编号（如 TC-001）"
+          },
+          "description": {
+            "type": "string",
+            "description": "测试目的（一句话）"
+          },
+          "page": {
+            "type": "string",
+            "description": "目标页面文件名（如 employee_list.cpt）"
+          },
+          "steps": {
+            "type": "array",
+            "description": "操作步骤",
+            "items": { "type": "string" }
+          },
+          "expected": {
+            "type": "string",
+            "description": "预期结果（明确可验证）"
+          }
+        }
+      }
+    }
+  }
+}

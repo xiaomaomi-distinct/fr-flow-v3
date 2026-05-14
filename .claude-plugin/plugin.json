@@ -1,0 +1,15 @@
+{
+  "name": "fr-flow-plugin",
+  "description": "帆软加壳前端开发流程技能插件 v3，包含 PM、数据层开发、展示层开发、QA 四个阶段的技能化开发流程",
+  "version": "3.0.0",
+  "author": {
+    "name": "移动化开发中心"
+  },
+  "skills": [
+    "../skills/fr",
+    "../skills/fr-pm",
+    "../skills/fr-data-dev",
+    "../skills/fr-display-dev",
+    "../skills/fr-qa"
+  ]
+}

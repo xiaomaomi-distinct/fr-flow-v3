@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkBook xmlVersion="20211223" releaseVersion="11.5.0">
+<ReportWebAttr>
+<ServerPrinter/>
+<WebWriteContent>
+<Listener event="afterload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[
+/* ================================================================
+   展示层 CPT 的 afterload <Content> 由以下三段构成：
+
+   ┌──────────────────────────┬──────────────────────┬────────┐
+   │  PREAMBLE（固定，由 writer │  DEVELOPER ZONE      │POSTAMB.│
+   │   自动写入，你不需要管）   │  ← .mjs 内容填到这里  │});    │
+   │  function(){ 'use strict' │  纯业务 JS，无需包裹  │        │
+   │  PATH = {...};           │                       │        │
+   │  帆软框架隐藏 ...          │                       │        │
+   └──────────────────────────┴──────────────────────┴────────┘
+   用途说明：本文件仅供预览最终 JS 结构，勿直接修改。
+   实际发布时请在 .mjs 文件中编写上方的"DEVELOPER ZONE"内容，
+   然后运行 display_writer.py 发布。
+================================================================ */
+
+(function() {
+    'use strict';
+
+/* ===== PREAMBLE（帆软固定结构，勿删勿改） ===== */
+    // 加载 antd 样式（内网环境）
+    var antdCSS = document.createElement('link');
+    antdCSS.rel = 'stylesheet';
+    antdCSS.href = '/webroot/help/lib/antd/antd.min.css';
+    document.head.appendChild(antdCSS);
+
+    var PATH = {
+        currentDir: (function() {
+            var name = FR.remoteEvaluate("=reportName");
+            return name.substring(0, name.lastIndexOf('/') + 1);
+        })(),
+        apiBase: (function() {
+            var servletURL = FR.remoteEvaluate("=servletURL");
+            var parts = servletURL.split('/');
+            return '/' + parts[1] + '/' + parts[2];
+        })(),
+        getDataTemplate: function(filename) {
+            return this.currentDir.replace('/pages/', '/data/') + filename;
+        },
+        getTemplatePath: function(filename) {
+            return this.currentDir + filename;
+        }
+    };
+
+    var hideStyle = document.createElement('style');
+    hideStyle.innerHTML =
+        '.fr-report{position:absolute!important;left:-9999px!important;visibility:hidden!important}' +
+        'body>.textbox-container,body>#textboxContainer,body>.widget-container{display:none!important}';
+    document.head.appendChild(hideStyle);
+    document.body.setAttribute('style',
+        'margin:0;padding:0;min-height:100vh;box-sizing:border-box;overflow-y:auto;');
+
+/* ===== DEVELOPER ZONE（display_writer.py 会把 .mjs 的内容整体填入这里） =====
+   此区内容仅供参考，最终 CPT 由 writer 自动生成，勿手动编辑本文件。
+   开发者 .mjs 最低限度写法示例（共 5 行，即是一个完整可运行的页面）：
+   ----------------------------------------------------------
+   var App = function() {
+       var _s = antd.useState;
+       return React.createElement('div', {className:'page-list'},
+           React.createElement(antd.Input, {placeholder:'搜索', onChange:function(e){_s[1](e.target.value);}}),
+           React.createElement(antd.Button, {type:'primary', onClick:function(){alert(_s[0]);}}, '搜索')
+       );
+   };
+   ReactDOM.createRoot(document.getElementById('app-root')).render(React.createElement(App, null));
+   ----------------------------------------------------------
+   更多示例、已知限制及完整 antd 用法：shared/KNOWLEDGE/ANTD_REACT_GUIDE.md
+===========================================================================*/
+
+/* ===== POSTAMBLE（帆软固定结构，勿删勿改） ===== */
+});
+]]></Content>
+</JavaScript>
+</Listener>
+<ToolBars/>
+<EditRowColor setColor="false"/>
+<WebWrite SheetPosition="3"/>
+<RptLocation isShowAtLeft="true"/>
+<UnloadCheck check="false"/>
+<ShowWidgets/>
+<OtherAttr autoStash="false"/>
+</WebWriteContent>
+</ReportWebAttr>
+<Report class="com.fr.report.worksheet.WorkSheet" name="sheet1">
+<ReportPageAttr>
+<HR/>
+<FR/>
+<HC/>
+<FC/>
+<USE REPEAT="false" PAGE="false" WRITE="false"/>
+</ReportPageAttr>
+<ColumnPrivilegeControl/>
+<RowPrivilegeControl/>
+<RowHeight defaultValue="723900">
+<![CDATA[723900,723900,723900,723900,723900,723900,723900,723900,723900,723900,723900]]></RowHeight>
+<ColumnWidth defaultValue="2743200">
+<![CDATA[2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200]]></ColumnWidth>
+<CellElementList>
+<C c="0" r="0" s="0">
+<PrivilegeControl/>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+</CellElementList>
+<ReportAttrSet>
+<ReportSettings headerHeight="0" footerHeight="0">
+<PaperSetting/>
+<FollowingTheme background="true"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-1" hor="-1" ver="-1"/>
+</color>
+</Background>
+</ReportSettings>
+</ReportAttrSet>
+<PrivilegeControl/>
+</Report>
+<ReportParameterAttr>
+<Attributes showWindow="true" delayPlaying="true" windowPosition="1" align="0" useParamsTemplate="true" currentIndex="0"/>
+<PWTitle>
+<![CDATA[参数]]></PWTitle>
+</ReportParameterAttr>
+<StyleList>
+<Style style_name="默认" full="true" border_source="-1" imageLayout="1">
+<FRFont name="simhei" style="0" size="72"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+</StyleList>
+<DesensitizationList/>
+<DesignerVersion DesignerVersion="LAA"/>
+<PreviewType PreviewType="1"/>
+<StrongestControlAttr class="com.fr.widgettheme.control.attr.WidgetDisplayEnhanceMarkAttr">
+<StrongestControlAttr widgetEnhance="false"/>
+</StrongestControlAttr>
+<TemplateThemeAttrMark class="com.fr.base.iofile.attr.TemplateThemeAttrMark">
+<TemplateThemeAttrMark name="经典浅灰" dark="false"/>
+</TemplateThemeAttrMark>
+<ForkIdAttrMark class="com.fr.base.iofile.attr.ForkIdAttrMark">
+<ForkIdAttrMark forkId="0b330108-1a1d-479a-b7d6-5ded33a7bd95"/>
+</ForkIdAttrMark>
+<TemplateIdAttMark class="com.fr.base.iofile.attr.TemplateIdAttMark">
+<TemplateIdAttMark TemplateId="0b330108-1a1d-479a-b7d6-5ded33a7bd95"/>
+</TemplateIdAttMark>
+</WorkBook>

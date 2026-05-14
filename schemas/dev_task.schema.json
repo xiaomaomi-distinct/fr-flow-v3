@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "dev_task",
+  "description": "开发任务单 JSON Schema (v3)",
+  "type": "object",
+  "required": ["project", "module", "backend_type", "pages"],
+
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "项目名称"
+    },
+    "module": {
+      "type": "string",
+      "description": "模块名称"
+    },
+    "version": {
+      "type": "string",
+      "description": "版本号",
+      "default": "1.0.0"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "创建时间 ISO 格式"
+    },
+
+    "backend_type": {
+      "type": "string",
+      "enum": ["self_built", "external_api_proxy", "pure_display"],
+      "description": "后端类型：self_built=自建数据层CRUD, external_api_proxy=外部API代理, pure_display=纯展示"
+    },
+
+    "database": {
+      "type": "object",
+      "description": "数据库设计（Type A: self_built 时必填）",
+      "properties": {
+        "tables": {
+          "type": "array",
+          "description": "数据表定义",
+          "items": {
+            "type": "object",
+            "required": ["name", "columns"],
+            "properties": {
+              "name": { "type": "string", "description": "表名" },
+              "comment": { "type": "string", "description": "表说明" },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "type"],
+                  "properties": {
+                    "name": { "type": "string", "description": "列名" },
+                    "type": { "type": "string", "description": "SQL类型" },
+                    "comment": { "type": "string", "description": "列说明" },
+                    "primary": { "type": "boolean", "description": "是否主键" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "datasets": {
+          "type": "array",
+          "description": "数据集定义",
+          "items": {
+            "type": "object",
+            "required": ["name", "type", "sql"],
+            "properties": {
+              "name": { "type": "string", "description": "数据集名称（如 employee_qry）" },
+              "type": {
+                "type": "string",
+                "enum": ["list", "stat", "detail", "dict", "insert", "update", "delete"],
+                "description": "数据集类型"
+              },
+              "sql": { "type": "string", "description": "SQL语句或存储过程调用" },
+              "params": {
+                "type": "array",
+                "description": "参数列表",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "type"],
+                  "properties": {
+                    "name": { "type": "string", "description": "参数名" },
+                    "type": { "type": "string", "enum": ["String", "Integer", "Double", "formula"] },
+                    "default": { "type": "string", "description": "默认值" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "api_config": {
+      "type": "object",
+      "description": "外部API配置（Type B: external_api_proxy 时必填）",
+      "required": ["p_url", "p_body_template", "err_code_field", "data_field"],
+      "properties": {
+        "p_url": { "type": "string", "description": "目标API地址" },
+        "p_body_template": { "type": "string", "description": "请求体模板（JSON字符串）" },
+        "err_code_field": { "type": "string", "description": "错误码字段路径" },
+        "data_field": { "type": "string", "description": "数据字段路径" }
+      }
+    },
+
+    "pages": {
+      "type": "array",
+      "description": "展示页面列表",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "title"],
+        "properties": {
+          "name": { "type": "string", "description": "页面文件名（不含扩展名，如 employee_list）" },
+          "type": {
+            "type": "string",
+            "enum": ["list", "form", "selector", "batch", "detail"],
+            "description": "页面类型"
+          },
+          "title": { "type": "string", "description": "页面标题（显示用）" },
+          "comment": { "type": "string", "description": "页面说明" },
+          "datasets": {
+            "type": "array",
+            "description": "该页面引用的数据集名称列表",
+            "items": { "type": "string" }
+          },
+          "menu": {
+            "type": "boolean",
+            "description": "是否挂菜单入口",
+            "default": false
+          },
+          "modal": {
+            "type": "boolean",
+            "description": "是否以弹窗方式打开",
+            "default": false
+          }
+        }
+      }
+    },
+
+    "permission": {
+      "type": "object",
+      "description": "权限控制配置",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["none", "dept", "role", "hybrid"],
+          "description": "权限模式：none=无权限控制, dept=部门隔离, role=角色控制, hybrid=组合"
+        },
+        "dept_field": { "type": "string", "description": "部门字段名" },
+        "role_field": { "type": "string", "description": "角色约束" },
+        "description": { "type": "string", "description": "权限规则说明" }
+      }
+    }
+  }
+}

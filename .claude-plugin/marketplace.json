@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "fr-flow-v3",
+  "description": "帆软加壳前端开发流程技能插件 v3 — 精简上下文、分层知识、多 Agent 协作流水线",
+  "owner": {
+    "name": "移动化开发中心"
+  },
+  "metadata": {
+    "version": "3.0.0"
+  },
+  "plugins": [
+    {
+      "name": "fr-flow-plugin",
+      "description": "帆软加壳前端开发流程技能插件 v3，包含 PM、数据层开发、展示层开发、QA 四个阶段的技能化开发流程",
+      "source": "..",
+      "category": "development"
+    }
+  ]
+}
