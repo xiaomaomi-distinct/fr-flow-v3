@@ -1,8 +1,70 @@
 # Ant Design 5.x 组件速查手册
 
-> 本文档是内网知识库，面向使用 JSX 开发帆软展示层的工程师。内容基于 antd 5.x 官方文档组织。
+> 本文档面向使用 JSX 开发帆软展示层的工程师。内容基于 antd 5.21.0 + React 18.3.1 实测。
 >
-> **帆软当前环境**：antd 5.x + React 18 + dayjs
+> **环境约束**：JSX 代码通过 esbuild 编译后注入 CPT。运行时使用全局变量，**禁止写 import 语句**。
+
+---
+
+## 环境速查
+
+| 项目 | 值 |
+|------|-----|
+| antd | 5.21.0（全局变量 `antd`） |
+| React | 18.3.1（全局变量 `React`） |
+| ReactDOM | 18.3.1（全局变量 `ReactDOM`） |
+| dayjs | 全局变量 `dayjs` |
+| jQuery | 全局变量 `$`（含 `$.ajax`） |
+| antdIcons | **不可用，不存在此全局变量** |
+| antd.locale | **不可用，需自行内联 locale 对象** |
+
+### 变量使用方式
+
+```jsx
+// ✅ 正确：从全局变量解构
+var { Table, Button, Modal, Form, Input, Select, Tag, Space, message } = antd;
+
+// ✅ 正确：React hooks 从全局 React 获取
+var [data, setData] = React.useState([]);
+
+// ❌ 错误：不要写 import 语句
+import { Table } from 'antd';              // 编译不报错但运行时模块不存在
+import { SearchOutlined } from '@ant-design/icons';  // antdIcons 不存在
+```
+
+### 推荐的 message 用法
+
+```jsx
+// ✅ 静态 API（父页面和 iframe 均可靠）
+antd.message.success('操作成功');
+antd.message.error('操作失败');
+
+// ❌ App.useApp() hook（iframe 中 message.success 可能不是函数）
+var { message } = antd.App.useApp();
+```
+
+### 国际化（中文）
+
+antd 默认英文。在 `starter.jsx` 中通过 `ConfigProvider` + 内联 locale 实现中文：
+
+```jsx
+var zhCN = { locale: 'zh-cn', Pagination: { items_per_page: '条/页', jump_to: '跳至',
+    prev_page: '上一页', next_page: '下一页', page: '页' },
+    Modal: { okText: '确定', cancelText: '取消' }, Table: { emptyText: '暂无数据' } };
+
+ReactDOM.createRoot(document.getElementById('app-root')).render(
+    React.createElement(antd.ConfigProvider, { locale: zhCN },
+        React.createElement(App)
+    )
+);
+```
+
+### iframe 注意事项
+
+- iframe 内会重新加载一套独立的 React/antd 实例（与父页面 `===` 比较为 `false`）
+- React Context 不跨 iframe 共享
+- `antd.message` 静态 API 在 iframe 中正常工作（推荐）
+- `App.useApp()` hook 在 iframe 中不可靠
 
 ---
 
@@ -20,46 +82,13 @@
 
 ## 目录
 
-1. [通用](#1-通用)
-   - Button 按钮
-   - Icon 图标
-   - Typography 排版
-2. [布局](#2-布局)
-   - Space 间距
-   - Grid 栅格
-   - Layout 布局
-3. [导航](#3-导航)
-   - Tabs 标签页
-   - Breadcrumb 面包屑
-   - Pagination 分页
-   - Steps 步骤条
-4. [数据录入](#4-数据录入)
-   - Input 输入框
-   - InputNumber 数字输入框
-   - Select 选择器
-   - Cascader 级联选择
-   - TreeSelect 树形选择
-   - DatePicker 日期选择器
-   - TimePicker 时间选择器
-   - Switch 开关
-5. [数据展示](#5-数据展示)
-   - Table 表格
-   - List 列表
-   - Tree 树形控件
-   - Card 卡片
-   - Statistic 统计数值
-   - Badge 徽章
-   - Tag 标签
-   - Descriptions 描述列表
-6. [反馈](#6-反馈)
-   - Modal 对话框
-   - Drawer 抽屉
-   - Message 全局提示
-   - Notification 通知提醒
-   - Alert 警告提示
-   - Spin 加载
-7. [表单](#7-表单)
-   - Form 表单
+1. [通用](#1-通用) — Button, Typography
+2. [布局](#2-布局) — Space, Grid, Layout
+3. [导航](#3-导航) — Tabs, Breadcrumb, Pagination, Steps
+4. [数据录入](#4-数据录入) — Input, InputNumber, Select, Cascader, TreeSelect, DatePicker, TimePicker, Switch
+5. [数据展示](#5-数据展示) — Table, List, Tree, Card, Statistic, Badge, Tag, Descriptions
+6. [反馈](#6-反馈) — Modal, Drawer, Message, Notification, Alert, Spin
+7. [表单](#7-表单) — Form
 
 ---
 
@@ -67,106 +96,90 @@
 
 ### Button 按钮
 
-**引入**：
 ```jsx
-import { Button } from 'antd';
-```
+var { Button } = antd;
 
-**基础用法**：
-```jsx
+// 基础
 <Button>默认按钮</Button>
 <Button type="primary">主要按钮</Button>
 <Button type="dashed">虚线按钮</Button>
 <Button type="text">文字按钮</Button>
 <Button type="link">链接按钮</Button>
-```
-
-**图标按钮**：
-```jsx
-import { SearchOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-
-<Button icon={<SearchOutlined />}>搜索</Button>
-<Button icon={<PlusOutlined />}>新增</Button>
 <Button danger>删除</Button>
-```
 
-**尺寸**：
-```jsx
-<Button size="large">大按钮</Button>
-<Button size="middle">中等按钮</Button>
-<Button size="small">小按钮</Button>
-```
+// 尺寸
+<Button size="small">小</Button>
+<Button size="middle">中</Button>
+<Button size="large">大</Button>
 
-**禁用状态**：
-```jsx
+// 状态
+<Button loading>加载中</Button>
 <Button disabled>禁用</Button>
 ```
 
-**加载状态**：
+**带图标按钮**：
+
+> **禁止使用 `<img>` 标签加载 SVG 图标。** `<img>` 内的 SVG 是隔离文档，无法通过 `fill: currentColor` 继承按钮颜色，导致图标不可见或尺寸异常（默认 0×0）。必须用内联 SVG + `dangerouslySetInnerHTML` 方案。
+> 
+> `/webroot/help/lib/antd/icons/` 下有 831 个 SVG 文件（`outlined/`、`filled/`、`twotone/`），init 时同步拉取并缓存，`icon('名字')` 直接使用。
+
 ```jsx
-<Button loading>加载中</Button>
+// ✅ 正确：init 时同步加载 SVG 文件到缓存，渲染时内联
+// iconBase 由 PATH.apiBase 动态计算，适配不同部署环境（webroot / wuhan 等）
+var iconBase = PATH.apiBase.replace('/decision', '/help/lib/antd/icons');
+var iconCache = {};
+(function() {
+    var names = ['search', 'plus', 'reload', 'edit', 'delete', 'close', 'check', 'filter'];
+    names.forEach(function(name) {
+        $.ajax({
+            url: iconBase + '/outlined/' + name + '.svg',
+            type: 'GET', async: false, dataType: 'text',
+            success: function(svg) { iconCache[name] = svg; },
+            error: function() { iconCache[name] = null; }
+        });
+    });
+})();
+
+function icon(name) {
+    var key = name.replace('/outlined/', '').replace('.svg', '');
+    var svg = iconCache[key];
+    if (!svg) return null;
+    // 关键：fill="currentColor" 继承按钮颜色，width/height 防止 0×0
+    svg = svg.replace('<svg ', '<svg fill="currentColor" width="1em" height="1em" ');
+    return React.createElement('span', {
+        style: { display: 'inline-flex', alignItems: 'center', lineHeight: 1 },
+        dangerouslySetInnerHTML: { __html: svg }
+    });
+}
+
+// 使用 — 直接用文件名（不含 .svg 后缀）
+<Button type="primary" icon={icon('search')}>搜索</Button>
+<Button icon={icon('reload')}>重置</Button>
+<Input prefix={icon('search')} placeholder="搜索" />
+
+// 添加新图标：在 names 数组里加名字即可，无需任何编码
+// 可用图标名见：ls /webroot/help/lib/antd/icons/outlined/
 ```
 
-**按钮组**：
 ```jsx
-import { Button as Group } from 'antd';
-
-<Group.Group>
-  <Button>左</Button>
-  <Button>中</Button>
-  <Button>右</Button>
-</Group.Group>
+// ❌ 错误：<img> 标签 — SVG 隔离文档，无法继承 currentColor
+var searchIcon = React.createElement('img', {
+    src: '/webroot/help/lib/antd/icons/outlined/search.svg',
+    style: { width: 14, height: 14 }
+});
+<Button type="primary" icon={searchIcon}>搜索</Button>
 ```
-
----
-
-### Icon 图标
-
-**引入方式**：
-```jsx
-import { SearchOutlined, PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-
-// 使用
-<Button icon={<SearchOutlined />}>搜索</Button>
-```
-
-**常用图标速查**：
-
-| 图标 | 名称 | 适用场景 |
-|------|------|----------|
-| `<SearchOutlined />` | 搜索 | 搜索按钮 |
-| `<PlusOutlined />` | 添加 | 新增按钮 |
-| `<DeleteOutlined />` | 删除 | 删除按钮 |
-| `<EditOutlined />` | 编辑 | 编辑按钮 |
-| `<CheckOutlined />` | 确认 | 提交/完成 |
-| `<CloseOutlined />` | 关闭 | 取消/关闭 |
-| `<ArrowLeftOutlined />` | 返回 | 返回按钮 |
-| `<SaveOutlined />` | 保存 | 保存按钮 |
-| `<UploadOutlined />` | 上传 | 上传按钮 |
-| `<DownloadOutlined />` | 下载 | 下载按钮 |
-| `<SettingOutlined />` | 设置 | 设置按钮 |
-| `<UserOutlined />` | 用户 | 用户信息 |
-
----
 
 ### Typography 排版
 
 ```jsx
-import { Typography } from 'antd';
+var { Typography } = antd;
+var { Text, Title, Paragraph } = Typography;
 
-const { Text, Title, Paragraph } = Typography;
-
-<Typography>
-  <Title level={1}>标题1</Title>
-  <Title level={2}>标题2</Title>
-  <Title level={3}>标题3</Title>
-  <Paragraph>
-    正文内容，可以包含<Text code>代码</Text>和<Text mark>高亮</Text>。
-  </Paragraph>
-  <Text type="secondary">次要文字</Text>
-  <Text type="danger">危险文字</Text>
-  <Text disabled>禁用文字</Text>
-</Typography>
+<Title level={2}>标题</Title>
+<Paragraph>正文内容</Paragraph>
+<Text type="secondary">次要文字</Text>
+<Text type="danger">危险文字</Text>
 ```
 
 ---
@@ -175,106 +188,58 @@ const { Text, Title, Paragraph } = Typography;
 
 ### Space 间距
 
-**控制元素之间的间距**：
 ```jsx
-import { Space, Button, Input } from 'antd';
+var { Space } = antd;
 
 <Space>
   <Button>按钮1</Button>
   <Button>按钮2</Button>
-  <Input placeholder="输入框" />
 </Space>
 
-// 垂直排列
 <Space direction="vertical">
   <Button>按钮1</Button>
   <Button>按钮2</Button>
 </Space>
 
-// 控制间距大小（antd 5）
 <Space size="large">
   <Button>按钮1</Button>
   <Button>按钮2</Button>
 </Space>
 
-<Space size={8}>
-  <Button>按钮1</Button>
-  <Button>按钮2</Button>
-</Space>
-
-// 自动换行
 <Space wrap>
-  {items.map(item => <Button key={item.id}>{item.name}</Button>)}
+  {items.map(function(item) { return <Button key={item.id}>{item.name}</Button>; })}
 </Space>
 ```
-
----
 
 ### Grid 栅格
 
-**24分栏系统**：
 ```jsx
-import { Row, Col, Button } from 'antd';
+var { Row, Col } = antd;
 
 <Row>
-  <Col span={24}>
-    <Button>24列 - 整行</Button>
-  </Col>
+  <Col span={12}><Button>12列</Button></Col>
+  <Col span={12}><Button>12列</Button></Col>
 </Row>
 
-<Row>
-  <Col span={12}>
-    <Button>12列 - 一半</Button>
-  </Col>
-  <Col span={12}>
-    <Button>12列 - 一半</Button>
-  </Col>
-</Row>
-
-<Row>
-  <Col span={8}>
-    <Button>8列</Button>
-  </Col>
-  <Col span={8}>
-    <Button>8列</Button>
-  </Col>
-  <Col span={8}>
-    <Button>8列</Button>
-  </Col>
-</Row>
-
-// 偏移
-<Row>
-  <Col span={8} offset={8}>
-    <Button>偏移8列</Button>
-  </Col>
-</Row>
-
-// 响应式
-<Row>
-  <Col xs={24} sm={12} md={8} lg={6}>
-    <Button>响应式列</Button>
-  </Col>
+<Row gutter={16}>
+  <Col span={8}><Button>8列</Button></Col>
+  <Col span={8}><Button>8列</Button></Col>
+  <Col span={8}><Button>8列</Button></Col>
 </Row>
 ```
-
----
 
 ### Layout 布局
 
 ```jsx
-import { Layout, Menu, Breadcrumb } from 'antd';
+var { Layout } = antd;
+var { Header, Content, Sider } = Layout;
 
-const { Header, Content, Sider, Footer } = Layout;
-
-// 典型页面布局
 <Layout>
   <Header>顶部导航</Header>
   <Layout>
     <Sider width={200}>侧边栏</Sider>
     <Content>主内容区</Content>
   </Layout>
-  <Footer>页脚</Footer>
 </Layout>
 ```
 
@@ -284,142 +249,58 @@ const { Header, Content, Sider, Footer } = Layout;
 
 ### Tabs 标签页
 
-**基础用法**：
 ```jsx
-import { Tabs } from 'antd';
+var { Tabs } = antd;
 
 <Tabs
   items={[
     { key: '1', label: '标签1', children: <div>内容1</div> },
     { key: '2', label: '标签2', children: <div>内容2</div> },
-    { key: '3', label: '标签3', children: <div>内容3</div> },
   ]}
 />
+
+// 受控模式
+var [activeKey, setActiveKey] = React.useState('1');
+<Tabs activeKey={activeKey} onChange={setActiveKey} items={[...]} />
 ```
-
-**带图标**：
-```jsx
-import { SearchOutlined, SettingOutlined } from '@ant-design/icons';
-
-<Tabs
-  items={[
-    { key: '1', label: <span><SearchOutlined />搜索</span>, children: <div>搜索内容</div> },
-    { key: '2', label: <span><SettingOutlined />设置</span>, children: <div>设置内容</div> },
-  ]}
-/>
-```
-
-**胶囊风格**：
-```jsx
-<Tabs type="card">
-  <Tabs.TabPane tab="标签1" key="1">
-    <div>内容1</div>
-  </Tabs.TabPane>
-  <Tabs.TabPane tab="标签2" key="2">
-    <div>内容2</div>
-  </Tabs.TabPane>
-</Tabs>
-```
-
-**受控模式**：
-```jsx
-const [activeKey, setActiveKey] = React.useState('1');
-
-<Tabs
-  activeKey={activeKey}
-  onChange={setActiveKey}
-  items={[
-    { key: '1', label: '标签1', children: <div>内容1</div> },
-    { key: '2', label: '标签2', children: <div>内容2</div> },
-  ]}
-/>
-```
-
----
 
 ### Breadcrumb 面包屑
 
 ```jsx
-import { Breadcrumb } from 'antd';
+var { Breadcrumb } = antd;
 
 <Breadcrumb
-  items={[
-    { title: '首页' },
-    { title: '列表' },
-    { title: '详情' },
-  ]}
-/>
-
-// 带链接
-<Breadcrumb
-  items={[
-    { title: <a href="/">首页</a> },
-    { title: <a href="/list">列表</a> },
-    { title: '详情' },
-  ]}
+  items={[{ title: '首页' }, { title: '列表' }, { title: '详情' }]}
 />
 ```
-
----
 
 ### Pagination 分页
 
-**基础用法**：
 ```jsx
-import { Pagination } from 'antd';
+var { Pagination } = antd;
 
-<Pagination
-  defaultCurrent={1}
-  total={100}
-  onChange={(page, pageSize) => {
-    console.log('页码:', page, '每页条数:', pageSize);
-  }}
-/>
-```
-
-**完整配置**：
-```jsx
 <Pagination
   current={current}
   pageSize={pageSize}
   total={total}
   showSizeChanger
   showQuickJumper
-  showTotal={(total) => `共 ${total} 条`}
-  onChange={(page, pageSize) => {
-    setCurrent(page);
-    setPageSize(pageSize);
-  }}
+  showTotal={function(total) { return '共 ' + total + ' 条'; }}
+  onChange={function(page, pageSize) { setCurrent(page); setPageSize(pageSize); }}
 />
 ```
 
----
+> **注意**：Pagination 默认英文（"Previous Page"、"Next Page"、"Page Size"）。要显示中文需通过 `ConfigProvider` 注入 locale。
 
 ### Steps 步骤条
 
 ```jsx
-import { Steps } from 'antd';
+var { Steps } = antd;
 
-const { Step } = Steps;
-
-<Steps current={1}>
-  <Step title="步骤1" description="描述信息" />
-  <Step title="步骤2" description="描述信息" />
-  <Step title="步骤3" description="描述信息" />
-</Steps>
-
-// 带图标
-<Steps current={0}>
-  <Step title="选择商品" icon={<ShoppingOutlined />} />
-  <Step title="核对信息" icon={<EditOutlined />} />
-  <Step title="完成" icon={<CheckOutlined />} />
-</Steps>
-
-// 简洁状态
-<Steps current={2} size="small" items={[
-  { title: '已完成' },
-  { title: '进行中' },
-  { title: '待处理' },
+<Steps current={1} items={[
+  { title: '步骤1', description: '描述' },
+  { title: '步骤2', description: '描述' },
+  { title: '步骤3', description: '描述' },
 ]} />
 ```
 
@@ -429,248 +310,94 @@ const { Step } = Steps;
 
 ### Input 输入框
 
-**基础用法**：
 ```jsx
-import { Input } from 'antd';
+var { Input } = antd;
 
 <Input placeholder="请输入" />
-
-// 带前缀/后缀
-<Input
-  prefix={<SearchOutlined />}
-  suffix={<CloseCircleOutlined />}
-/>
-```
-
-**密码框**：
-```jsx
-import { Input } from 'antd';
-
 <Input.Password placeholder="请输入密码" />
-```
 
-**文本域**：
-```jsx
+// 文本域
 <Input.TextArea rows={4} placeholder="请输入" />
-
-// 自动适应高度
 <Input.TextArea autoSize={{ minRows: 2, maxRows: 6 }} />
-```
 
-**尺寸**：
-```jsx
+// 尺寸
 <Input size="large" placeholder="大尺寸" />
-<Input size="middle" placeholder="中等" />
 <Input size="small" placeholder="小尺寸" />
-```
 
-**禁用**：
-```jsx
-<Input disabled placeholder="禁用状态" />
+// 禁用
+<Input disabled placeholder="禁用" />
 ```
-
----
 
 ### InputNumber 数字输入框
 
 ```jsx
-import { InputNumber } from 'antd';
+var { InputNumber } = antd;
 
 <InputNumber min={0} max={100} defaultValue={10} />
-
-// 带步进
-<InputNumber
-  min={0}
-  max={100}
-  step={10}
-  defaultValue={50}
-/>
-
-// 格式化显示
-<InputNumber
-  defaultValue={1000}
-  formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-  parser={(value) => value.replace(/¥\s?|(,*)/g, '')}
-/>
+<InputNumber min={0} precision={2} style={{ width: '100%' }} />
 ```
-
----
 
 ### Select 选择器
 
-**基础用法**：
 ```jsx
-import { Select } from 'antd';
+var { Select } = antd;
 
 <Select
   placeholder="请选择"
   options={[
     { value: '1', label: '选项1' },
     { value: '2', label: '选项2' },
-    { value: '3', label: '选项3' },
   ]}
 />
-```
 
-**支持搜索**：
-```jsx
-<Select
-  showSearch
-  placeholder="搜索选择"
-  options={[
-    { value: '1', label: '选项1' },
-    { value: '2', label: '选项2' },
-  ]}
-/>
+// 支持搜索 + 允许清除
+<Select showSearch allowClear placeholder="搜索选择" options={[...]} />
 ```
-
-**多选**：
-```jsx
-<Select
-  mode="multiple"
-  placeholder="多选"
-  options={[
-    { value: '1', label: '选项1' },
-    { value: '2', label: '选项2' },
-    { value: '3', label: '选项3' },
-  ]}
-/>
-```
-
-**禁用**：
-```jsx
-<Select disabled placeholder="禁用" options={[{ value: '1', label: '选项1' }]} />
-```
-
----
 
 ### Cascader 级联选择
 
 ```jsx
-import { Cascader } from 'antd';
+var { Cascader } = antd;
 
-const options = [
-  {
-    value: 'zhejiang',
-    label: '浙江',
-    children: [
-      { value: 'hangzhou', label: '杭州' },
-      { value: 'ningbo', label: '宁波' },
-    ],
-  },
-  {
-    value: 'jiangsu',
-    label: '江苏',
-    children: [
-      { value: 'nanjing', label: '南京' },
-    ],
-  },
+var options = [
+  { value: 'zhejiang', label: '浙江', children: [
+    { value: 'hangzhou', label: '杭州' }
+  ]},
 ];
 
 <Cascader options={options} placeholder="请选择" />
 ```
 
----
-
 ### TreeSelect 树形选择
 
 ```jsx
-import { TreeSelect } from 'antd';
+var { TreeSelect } = antd;
 
-const treeData = [
-  {
-    value: 'parent 1',
-    title: '父节点1',
-    children: [
-      { value: 'child 1', title: '子节点1' },
-      { value: 'child 2', title: '子节点2' },
-    ],
-  },
-];
-
-<TreeSelect
-  treeData={treeData}
-  placeholder="请选择"
-/>
+<TreeSelect treeData={treeData} placeholder="请选择" />
 ```
-
----
 
 ### DatePicker 日期选择器
 
-**基础用法**：
 ```jsx
-import { DatePicker } from 'antd';
+var { DatePicker } = antd;
 
-<DatePicker
-  onChange={(date, dateString) => {
-    console.log(date, dateString);
-  }}
-/>
+<DatePicker onChange={function(date, dateString) { /* ... */ }} />
 ```
-
-**选择日期范围**：
-```jsx
-import { DatePicker } from 'antd';
-const { RangePicker } = DatePicker;
-
-<RangePicker
-  onChange={(dates, dateStrings) => {
-    console.log('选中的日期:', dates);
-    console.log('日期字符串:', dateStrings);
-  }}
-/>
-```
-
-**选择周/月/年**：
-```jsx
-<DatePicker picker="week" />
-<DatePicker picker="month" />
-<DatePicker picker="quarter" />
-<DatePicker picker="year" />
-```
-
-**不可选日期**：
-```jsx
-<DatePicker
-  disabledDate={(current) => {
-    // 禁用未来日期（使用 dayjs）
-    return current && current > dayjs().endOf('day');
-  }}
-/>
-```
-
----
 
 ### TimePicker 时间选择器
 
 ```jsx
-import { TimePicker } from 'antd';
+var { TimePicker } = antd;
 
-<TimePicker
-  onChange={(time, timeString) => {
-    console.log(time, timeString);
-  }}
-/>
-
-// 12小时制
-<TimePicker use12Hours format="h:mm:ss A" />
+<TimePicker onChange={function(time, timeString) { /* ... */ }} />
 ```
-
----
 
 ### Switch 开关
 
 ```jsx
-import { Switch } from 'antd';
+var { Switch } = antd;
 
-<Switch
-  checked={checked}
-  onChange={setChecked}
-/>
-
-// 禁用
-<Switch disabled />
+<Switch checked={checked} onChange={setChecked} />
 ```
 
 ---
@@ -679,212 +406,86 @@ import { Switch } from 'antd';
 
 ### Table 表格
 
-**基础用法**：
 ```jsx
-import { Table } from 'antd';
+var { Table, Button, Space, Tag } = antd;
 
-const columns = [
-  { title: 'ID', dataIndex: 'id', key: 'id' },
+var columns = [
+  { title: 'ID', dataIndex: 'id', key: 'id', width: 70 },
   { title: '名称', dataIndex: 'name', key: 'name' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
+  { title: '状态', dataIndex: 'status', key: 'status', width: 80,
+    render: function(v) { return <Tag color={v === '启用' ? 'success' : 'default'}>{v}</Tag>; }
+  },
+  { title: '操作', key: 'action', width: 150,
+    render: function(_, record) {
+      return <Space>
+        <Button size="small" type="link" onClick={function() { handleEdit(record); }}>编辑</Button>
+        <Button size="small" type="link" danger onClick={function() { handleDelete(record.id); }}>删除</Button>
+      </Space>;
+    }
+  },
 ];
 
-const data = [
-  { id: 1, name: '项目1', status: '启用' },
-  { id: 2, name: '项目2', status: '禁用' },
-];
-
-<Table columns={columns} dataSource={data} rowKey="id" />
-```
-
-**带分页**：
-```jsx
 <Table
   columns={columns}
   dataSource={data}
   rowKey="id"
+  loading={loading}
+  size="middle"
+  scroll={{ x: 800 }}
   pagination={{
-    current: 1,
-    pageSize: 10,
-    total: 100,
+    current: current,
+    pageSize: pageSize,
+    total: total,
     showSizeChanger: true,
-    showTotal: (total) => `共 ${total} 条`,
+    showQuickJumper: true,
+    showTotal: function(t) { return '共 ' + t + ' 条'; },
+    onChange: handlePageChange
   }}
 />
 ```
-
-**带选择框**：
-```jsx
-const [selectedRowKeys, setSelectedRowKeys] = React.useState([]);
-
-<Table
-  rowSelection={{
-    selectedRowKeys,
-    onChange: setSelectedRowKeys,
-  }}
-  columns={columns}
-  dataSource={data}
-  rowKey="id"
-/>
-```
-
-**自定义列渲染**：
-```jsx
-const columns = [
-  { title: '状态', dataIndex: 'status', key: 'status',
-    render: (text) => (
-      <Badge status={text === '启用' ? 'success' : 'default'} text={text} />
-    )
-  },
-  { title: '操作', key: 'action',
-    render: (_, record) => (
-      <Space>
-        <Button size="small" onClick={() => handleEdit(record)}>编辑</Button>
-        <Button size="small" danger onClick={() => handleDelete(record.id)}>删除</Button>
-      </Space>
-    )
-  },
-];
-```
-
----
 
 ### List 列表
 
 ```jsx
-import { List, Button, Space } from 'antd';
+var { List, Button } = antd;
 
 <List
   dataSource={data}
-  renderItem={(item) => (
-    <List.Item
-      actions={[
-        <Button key="edit" size="small">编辑</Button>,
-        <Button key="delete" size="small" danger>删除</Button>,
-      ]}
-    >
-      <List.Item.Meta
-        title={item.title}
-        description={item.description}
-      />
-    </List.Item>
-  )}
-/>
-```
-
----
-
-### Tree 树形控件
-
-```jsx
-import { Tree } from 'antd';
-
-const treeData = [
-  {
-    title: '父节点',
-    key: '0',
-    children: [
-      { title: '子节点1', key: '0-0' },
-      { title: '子节点2', key: '0-1' },
-    ],
-  },
-];
-
-<Tree
-  treeData={treeData}
-  selectable
-  onSelect={(selectedKeys) => {
-    console.log('选中:', selectedKeys);
+  renderItem={function(item) {
+    return <List.Item actions={[<Button key="edit" size="small">编辑</Button>]}>
+      <List.Item.Meta title={item.title} description={item.description} />
+    </List.Item>;
   }}
 />
 ```
 
----
+### Tree 树形控件
+
+```jsx
+var { Tree } = antd;
+
+<Tree treeData={treeData} selectable onSelect={function(keys) { /* ... */ }} />
+```
 
 ### Card 卡片
 
-**基础用法**：
 ```jsx
-import { Card } from 'antd';
+var { Card } = antd;
 
 <Card title="卡片标题">
   <p>卡片内容</p>
-  <p>卡片内容</p>
 </Card>
-```
 
-**带操作**：
-```jsx
-<Card
-  title="标题"
-  extra={<Button size="small">更多</Button>}
->
+// 带操作
+<Card title="标题" extra={<Button size="small">更多</Button>}>
   <p>内容</p>
 </Card>
 ```
 
-**带图片**：
-```jsx
-<Card
-  cover={<img src="https://example.com/image.jpg" alt="图片" />}
-  title="图片卡片"
->
-  <p>描述内容</p>
-</Card>
-```
-
-**网格布局中的卡片**：
-```jsx
-import { Row, Col, Card } from 'antd';
-
-<Row gutter={16}>
-  <Col span={8}>
-    <Card title="卡片1">内容1</Card>
-  </Col>
-  <Col span={8}>
-    <Card title="卡片2">内容2</Card>
-  </Col>
-  <Col span={8}>
-    <Card title="卡片3">内容3</Card>
-  </Col>
-</Row>
-```
-
----
-
-### Statistic 统计数值
-
-```jsx
-import { Statistic } from 'antd';
-
-<Statistic
-  title="总用户数"
-  value={1000}
-  suffix="人"
-/>
-
-// 带格式化
-<Statistic
-  title="收入"
-  value={1234567.89}
-  precision={2}
-  prefix="¥"
-/>
-
-// 倒计时（antd 5）
-<Statistic.Countdown
-  value={Date.now() + 86400000}
-  format="HH:mm:ss"
-/>
-```
-
----
-
 ### Badge 徽章
 
-**基础用法**：
 ```jsx
-import { Badge } from 'antd';
+var { Badge } = antd;
 
 <Badge status="success" text="成功" />
 <Badge status="processing" text="进行中" />
@@ -893,75 +494,26 @@ import { Badge } from 'antd';
 <Badge status="warning" text="警告" />
 ```
 
-**带数字**：
-```jsx
-<Badge count={5}>
-  <a href="#" className="head-example" />
-</Badge>
-
-// 显示最大值
-<Badge count={100} overflowCount={99}>
-  <a href="#" className="head-example" />
-</Badge>
-```
-
-**独立使用**：
-```jsx
-<Badge count={5} />
-```
-
----
-
 ### Tag 标签
 
 ```jsx
-import { Tag } from 'antd';
+var { Tag } = antd;
 
-// 基础
-<Tag>标签1</Tag>
-<Tag color="blue">蓝色</Tag>
-
-// 各种颜色
+<Tag>标签</Tag>
 <Tag color="success">成功</Tag>
 <Tag color="processing">进行中</Tag>
 <Tag color="error">错误</Tag>
 <Tag color="warning">警告</Tag>
-
-// 可关闭
-<Tag closable onClose={(e) => console.log('关闭')}>
-  可关闭标签
-</Tag>
-
-// 组合使用
-<Space>
-  {tags.map((tag) => (
-    <Tag key={tag.id} closable onClose={() => handleClose(tag)}>
-      {tag.name}
-    </Tag>
-  ))}
-</Space>
 ```
-
----
 
 ### Descriptions 描述列表
 
 ```jsx
-import { Descriptions } from 'antd';
+var { Descriptions } = antd;
 
-<Descriptions title="用户信息">
+<Descriptions title="信息" bordered>
   <Descriptions.Item label="用户名">张三</Descriptions.Item>
-  <Descriptions.Item label="手机号">13800138000</Descriptions.Item>
-  <Descriptions.Item label="邮箱">zhangsan@example.com</Descriptions.Item>
-  <Descriptions.Item label="状态">
-    <Badge status="success" text="启用" />
-  </Descriptions.Item>
-</Descriptions>
-
-// 带边框
-<Descriptions bordered>
-  <Descriptions.Item label="用户名">张三</Descriptions.Item>
-  <Descriptions.Item label="手机号">13800138000</Descriptions.Item>
+  <Descriptions.Item label="状态"><Badge status="success" text="启用" /></Descriptions.Item>
 </Descriptions>
 ```
 
@@ -971,22 +523,20 @@ import { Descriptions } from 'antd';
 
 ### Modal 对话框
 
-**基础用法**：
 ```jsx
-import { Modal, Button } from 'antd';
-
-const [visible, setVisible] = React.useState(false);
+var { Modal, Button } = antd;
+var [visible, setVisible] = React.useState(false);
 
 <>
-  <Button onClick={() => setVisible(true)}>打开弹窗</Button>
+  <Button onClick={function() { setVisible(true); }}>打开弹窗</Button>
   <Modal
     title="弹窗标题"
     open={visible}
-    onOk={() => setVisible(false)}
-    onCancel={() => setVisible(false)}
+    onOk={function() { setVisible(false); }}
+    onCancel={function() { setVisible(false); }}
     footer={[
-      <Button key="cancel" onClick={() => setVisible(false)}>取消</Button>,
-      <Button key="ok" type="primary" onClick={() => setVisible(false)}>确定</Button>,
+      <Button key="cancel" onClick={function() { setVisible(false); }}>取消</Button>,
+      <Button key="ok" type="primary" onClick={function() { setVisible(false); }}>确定</Button>,
     ]}
   >
     <p>弹窗内容</p>
@@ -995,155 +545,94 @@ const [visible, setVisible] = React.useState(false);
 ```
 
 **确认对话框**：
-```jsx
-import { Modal } from 'antd';
 
+```jsx
 Modal.confirm({
   title: '确认删除',
   content: '删除后无法恢复，确定要删除吗？',
   okText: '确认',
   cancelText: '取消',
-  onOk: () => {
-    console.log('确认删除');
-  },
+  okButtonProps: { danger: true },
+  onOk: function() { /* ... */ },
 });
 ```
 
-**表单弹窗**：
+**iframe 弹窗（表单页）**：
+
 ```jsx
+var [formUrl, setFormUrl] = React.useState('');
+var [modalVisible, setModalVisible] = React.useState(false);
+
+function openForm(record) {
+  var url = PATH.apiBase + '/view/report?viewlet=' +
+            PATH.getTemplatePath('book_form.cpt') + '&op=write';
+  if (record) url += '&id=' + record.id;
+  setFormUrl(url);
+  setModalVisible(true);
+}
+
 <Modal
-  title={editingId ? '编辑' : '新增'}
+  title={null}
   open={modalVisible}
-  onOk={handleSave}
-  onCancel={() => setModalVisible(false)}
-  footer={null}  // 自定义底部
+  footer={null}
+  width={600}
+  destroyOnClose
+  onCancel={function() { setModalVisible(false); }}
+  styles={{ body: { padding: 0 } }}
 >
-  <Form form={form} layout="vertical">
-    <Form.Item name="title" label="标题" rules={[{ required: true }]}>
-      <Input />
-    </Form.Item>
-    <Form.Item name="content" label="内容">
-      <Input.TextArea rows={4} />
-    </Form.Item>
-  </Form>
+  <iframe id="modalFrame" src={formUrl}
+    style={{ width: '100%', height: '500px', minHeight: '400px', border: 'none' }} />
 </Modal>
 ```
-
----
 
 ### Drawer 抽屉
 
 ```jsx
-import { Drawer, Button, Form, Input } from 'antd';
+var { Drawer, Form, Input } = antd;
 
-const [drawerVisible, setDrawerVisible] = React.useState(false);
-
-<>
-  <Button onClick={() => setDrawerVisible(true)}>打开抽屉</Button>
-  <Drawer
-    title="抽屉标题"
-    placement="right"
-    open={drawerVisible}
-    onClose={() => setDrawerVisible(false)}
-    width={400}
-  >
-    <Form layout="vertical">
-      <Form.Item label="标题">
-        <Input />
-      </Form.Item>
-      <Form.Item label="内容">
-        <Input.TextArea rows={4} />
-      </Form.Item>
-    </Form>
-  </Drawer>
-</>
+<Drawer title="抽屉标题" placement="right" open={visible} onClose={function() { setVisible(false); }} width={400}>
+  <Form layout="vertical">
+    <Form.Item label="标题"><Input /></Form.Item>
+  </Form>
+</Drawer>
 ```
-
----
 
 ### Message 全局提示
 
 ```jsx
-import { message } from 'antd';
-
-message.success('操作成功');
-message.error('操作失败');
-message.warning('警告信息');
-message.info('提示信息');
+// 推荐：静态 API（父页面和 iframe 均可靠）
+antd.message.success('操作成功');
+antd.message.error('操作失败');
+antd.message.warning('警告信息');
+antd.message.info('提示信息');
 
 // 加载中
-const hide = message.loading('加载中...', 0);
+var hide = antd.message.loading('加载中...', 0);
 // 关闭
 hide();
 ```
 
----
-
 ### Notification 通知提醒
 
 ```jsx
-import { notification } from 'antd';
-
-notification.success({
-  message: '通知标题',
-  description: '通知内容',
-});
-
-notification.error({
-  message: '错误',
-  description: '操作失败，请重试',
-});
-
-notification.info({
-  message: '提示',
-  description: '有新消息',
-});
+antd.notification.success({ message: '通知标题', description: '通知内容' });
+antd.notification.error({ message: '错误', description: '操作失败，请重试' });
 ```
-
----
 
 ### Alert 警告提示
 
 ```jsx
-import { Alert } from 'antd';
+var { Alert } = antd;
 
 <Alert message="成功提示" type="success" />
-<Alert message="错误提示" type="error" />
-<Alert message="警告提示" type="warning" />
-<Alert message="信息提示" type="info" />
-
-// 带描述
-<Alert
-  message="标题"
-  description="详细描述信息"
-  type="info"
-/>
-
-// 可关闭
-<Alert
-  message="可关闭的警告"
-  type="warning"
-  closable
-  onClose={() => console.log('关闭')}
-/>
+<Alert message="错误提示" type="error" closable />
 ```
-
----
 
 ### Spin 加载
 
-**基础用法**：
 ```jsx
-import { Spin } from 'antd';
+var { Spin } = antd;
 
-<Spin />
-
-// 全屏加载
-<Spin size="large" tip="加载中..." />
-```
-
-**放在内容区**：
-```jsx
 <Spin spinning={loading}>
   <div>实际内容</div>
 </Spin>
@@ -1155,92 +644,62 @@ import { Spin } from 'antd';
 
 ### Form 表单
 
-**基础用法**：
 ```jsx
-import { Form, Input, Button } from 'antd';
+var { Form, Input, InputNumber, Select, Button } = antd;
 
-const [form] = Form.useForm();
+var [form] = Form.useForm();
 
 <Form
   form={form}
   layout="vertical"
-  onFinish={(values) => {
-    console.log('表单值:', values);
-  }}
+  onFinish={function(values) { /* ... */ }}
 >
-  <Form.Item
-    name="username"
-    label="用户名"
-    rules={[{ required: true, message: '请输入用户名' }]}
-  >
-    <Input placeholder="请输入用户名" />
+  <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
+    <Input placeholder="请输入" />
   </Form.Item>
 
-  <Form.Item
-    name="password"
-    label="密码"
-    rules={[{ required: true, message: '请输入密码' }]}
-  >
-    <Input.Password placeholder="请输入密码" />
+  <Form.Item name="amount" label="金额">
+    <InputNumber min={0} precision={2} style={{ width: '100%' }} />
   </Form.Item>
 
-  <Form.Item>
-    <Button type="primary" htmlType="submit">提交</Button>
-    <Button htmlType="button" onClick={() => form.resetFields()}>重置</Button>
+  <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+    <Select placeholder="请选择" options={[
+      { value: 'active', label: '启用' },
+      { value: 'inactive', label: '禁用' },
+    ]} />
   </Form.Item>
-</Form>
-```
 
-**水平布局**：
-```jsx
-<Form layout="horizontal">
-  <Form.Item name="username" label="用户名">
-    <Input style={{ width: 200 }} />
-  </Form.Item>
-</Form>
-```
-
-**内联布局**：
-```jsx
-<Form layout="inline">
-  <Form.Item name="username" label="用户名">
-    <Input style={{ width: 200 }} />
-  </Form.Item>
-  <Form.Item name="password" label="密码">
-    <Input.Password style={{ width: 200 }} />
-  </Form.Item>
   <Form.Item>
     <Button type="primary" htmlType="submit">提交</Button>
   </Form.Item>
 </Form>
 ```
 
-**编辑回填**：
+### 编辑回填
+
 ```jsx
-// 设置初始值
+// 从接口获取数据后回填
 form.setFieldsValue({
-  username: '张三',
-  password: '123456',
+  name: record.name,
+  amount: record.amount,
+  status: record.status,
 });
 
-// 获取值
-const values = form.getFieldsValue();
+// 获取表单值
+var values = form.getFieldsValue();
 ```
 
-**表单验证规则**：
+### 表单验证规则
+
 ```jsx
-<Form.Item
-  name="email"
-  label="邮箱"
+<Form.Item name="email" label="邮箱"
   rules={[
     { required: true, message: '请输入邮箱' },
     { type: 'email', message: '请输入有效的邮箱地址' },
   ]}
 />
 
-<Form.Item
-  name="phone"
-  label="手机号"
+<Form.Item name="phone" label="手机号"
   rules={[
     { required: true, message: '请输入手机号' },
     { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号' },
@@ -1252,93 +711,146 @@ const values = form.getFieldsValue();
 
 ## 附录：常用模式
 
-### 受控组件模式
+### 受控组件
 
 ```jsx
-// Input 受控
-const [value, setValue] = React.useState('');
-<Input value={value} onChange={(e) => setValue(e.target.value)} />
+var [value, setValue] = React.useState('');
+<Input value={value} onChange={function(e) { setValue(e.target.value); }} />
 
-// Select 受控
-const [selected, setSelected] = React.useState('');
+var [selected, setSelected] = React.useState('');
 <Select value={selected} onChange={setSelected} options={[]} />
 ```
 
 ### 列表渲染
 
 ```jsx
-// 数组映射
-{data.map((item, index) => (
-  <div key={item.id}>
-    <span>{item.name}</span>
-    <Button onClick={() => handleDelete(item.id)}>删除</Button>
-  </div>
-))}
+{data.map(function(item, index) {
+  return <div key={item.id}><span>{item.name}</span></div>;
+})}
 ```
 
 ### 条件渲染
 
 ```jsx
-// 简单条件
 {visible && <Modal open={visible} />}
-
-// 复杂条件
-{status === 'success' ? (
-  <Alert type="success" message="成功" />
-) : status === 'error' ? (
-  <Alert type="error" message="失败" />
-) : (
-  <Alert type="info" message="等待中" />
-)}
-```
-
-### 阻止默认行为
-
-```jsx
-<form onSubmit={(e) => {
-  e.preventDefault();
-  handleSubmit();
-}}>
+{status === 'success' ? <Alert type="success" message="成功" /> : <Alert type="info" message="等待中" />}
 ```
 
 ### useEffect 依赖
 
 ```jsx
-// 模拟 componentDidMount
-React.useEffect(() => {
-  loadData();
-}, []);
+// 初始化
+React.useEffect(function() { loadData(); }, []);
 
-// 模拟 componentDidUpdate
-React.useEffect(() => {
-  loadData(param);
-}, [param]);
+// 依赖变化
+React.useEffect(function() { loadData(param); }, [param]);
 
 // 清理
-React.useEffect(() => {
-  const timer = setInterval(() => {}, 1000);
-  return () => clearInterval(timer);
+React.useEffect(function() {
+  var timer = setInterval(function() {}, 1000);
+  return function() { clearInterval(timer); };
 }, []);
 ```
 
-### fetch 数据模式
+---
+
+## 8. 页面布局规范
+
+> 各页面类型对应的脚手架路径：`foundation/scaffolds/starter_{type}.jsx`
+> 完整说明见 `foundation/scaffolds/README.md`
+
+### 列表页（`type: "list"`）
+
+```
+┌──────────────────────────────────────────────┐
+│  页面标题                                     │
+│  [搜索框] [筛选▼] [筛选▼] [搜索] [重置]        │ ← toolbar-left
+│                                 [+ 新增]      │ ← toolbar-right
+│  ┌──────────────────────────────────────────┐│
+│  │ Table                                    ││
+│  └──────────────────────────────────────────┘│
+│  共 N 条  [<][1][2][>]  条/页 ▼  跳至__页    │
+└──────────────────────────────────────────────┘
+```
+
+- 新增按钮固定于搜索栏右侧
+- 操作列（编辑/删除）固定于表格最右列
+- 表单弹窗通过 Modal + iframe 打开，不跳转页面
+- `display:flex; justify-content:space-between` 实现左右分区
+
+### 表单页（`type: "form"`）
+
+```
+┌──────────────────────────────┐
+│  新增XX / 编辑XX          [✕]│
+├──────────────────────────────┤
+│  书名 *  [________________]  │
+│  作者 *  [________________]  │  ← Form layout="vertical"
+│  价格    [¥___]  状态 [▼]   │
+│  ──────────────────────────  │
+│               [取消] [保存]   │  ← 底部右对齐(flex-end)
+└──────────────────────────────┘
+```
+
+- Modal 弹窗，destroyOnClose
+- 编辑时通过 `?id=N` URL 参数传递记录 ID
+- 保存后 `postMessage({type:'fr_form_saved'})`
+- 取消按钮调用 `notifyParentSaved()` 关闭弹窗
+- 加载后 `postMessage({type:'fr_iframe_resize',height:...})`
+
+### 详情页（`type: "detail"`）
+
+- 独立页面，Descriptions bordered，2 列
+- 顶部标题行右侧"返回列表"按钮
+- 底部操作区居中（编辑 + 返回）
+- 通过 `?id=N` URL 参数获取记录 ID
+
+### 批量导入页（`type: "batch"`）
+
+- 4 步向导：选择文件 → 数据预览 → 写入校验 → 结果
+- 自定义步骤条（CSS），不是 antd Steps
+- 步骤 0：拖拽上传区 + 格式说明
+- 步骤 1：预览表格（前 100 行）
+- 步骤 2：进度条（分批写入 + 校验中）
+- 步骤 3：统计卡片（通过/失败）+ 错误明细表格
+- 底部按钮按 step 切换
+
+### 选择器页（`type: "selector"`）
+
+- Modal 弹窗，紧凑搜索栏 + Table(rowSelection)
+- 底部固定栏：左侧已选摘要（逗号分隔），右侧取消+确定
+- 确定后 `postMessage({type:'fr_selector_selected', data:[...]})`
+
+---
+
+### AJAX 数据请求
 
 ```jsx
-React.useEffect(() => {
+React.useEffect(function() {
   setLoading(true);
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: value }),
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      setLoading(false);
-      setData(data);
-    })
-    .catch((err) => {
-      setLoading(false);
-      message.error('请求失败');
-    });
+  $.ajax({
+    url: PATH.apiBase + '/api/data',
+    type: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({
+      report_path: PATH.getDataTemplate('demo_data.cpt'),
+      datasource_name: 'book_qry',
+      page_number: -1,
+      page_size: -1,
+      parameters: [
+        { name: 'p_page', type: 'Integer', value: 1 },
+        { name: 'p_pagesize', type: 'Integer', value: 10 },
+      ]
+    }),
+    success: function(res) {
+      if (typeof res === 'string') { try { res = JSON.parse(res); } catch(e) {} }
+      if (res.err_code !== 0) { antd.message.error(res.err_msg || '查询失败'); return; }
+      setData(res.data || []);
+    },
+    error: function(xhr, status, error) {
+      antd.message.error('网络错误：' + error);
+    },
+    complete: function() { setLoading(false); }
+  });
 }, []);
 ```

@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkBook xmlVersion="20211223" releaseVersion="11.0.0">
+<TableDataMap>
+<TableData name="json1" class="com.fr.plugin.db.json.core.JSONTableData" pluginID="com.fr.plugin.db.json.v11" plugin-version="9.5.13">
+<Desensitizations desensitizeOpen="false"/>
+<Parameters/>
+<Connection class="com.fr.data.impl.NameDatabaseConnection">
+<DatabaseName>
+<![CDATA[general_json]]></DatabaseName>
+</Connection>
+<ConfigAttr class="com.fr.plugin.db.json.core.ConfigAttr" pluginID="com.fr.plugin.db.json.v11" plugin-version="9.5.13">
+<Attr sorted="false" prepare="false"/>
+</ConfigAttr>
+<QueryText>
+<![CDATA[$]]></QueryText>
+</TableData>
+</TableDataMap>
+<ReportWebAttr>
+<ServerPrinter/>
+<WebPageContent>
+<Listener event="afterload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters>
+<Parameter>
+<Attributes name="paralist"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$paralist]]></Attributes>
+</O>
+</Parameter>
+</Parameters>
+<Content>
+<![CDATA[var div = document.getElementById("newdiv");
+var mask_div = window.parent.document.getElementById("mask_div");
+div.remove();
+//根据页面结果，若成功则刷新，否则不刷新
+var rsdiv = document.getElementById("rs")
+var rsMsg = document.getElementById("rsMsg")
+//var successMsg = rsMsg.innerHTML + (!rsMsg.innerHTML || rsMsg.innerHTML.length == 0) ? "":"，";
+if (rsdiv == null) {
+	var rs = '失败！';
+} else {
+	var rs = rsdiv.textContent;
+}
+
+let needCountdown = FR.remoteEvaluate("=needCountdown");
+if (rs == '成功！') {
+	if (needCountdown == "1") {
+		setTimeout(function() {
+			var s = 3;
+			rsMsg.innerHTML = s + '秒后，自动关闭页面!'
+			window.myClose = setInterval(function() {
+				s = --s;
+				if (s <= 4) {
+					rsMsg.innerHTML = s + '秒后，自动关闭页面!'
+				}
+				//		console.log(s);
+				if (s == 0) {
+
+					if (window.parent.successCallback && typeof window.parent.successCallback === "function") {
+						window.parent.successCallback({
+							subwindow: window
+						});
+					} else {
+						window.parent.location.reload();
+					}
+					mask_div.remove();
+					clearInterval(myClose);
+				} else {}
+			}, 1000)
+		}, 0);
+	}
+} else {
+	if (window.parent.failedCallback && typeof window.parent.failedCallback === "function") {
+		mask_div.remove();
+		window.parent.failedCallback({
+			subwindow: window
+		});
+	}
+}]]></Content>
+</JavaScript>
+</Listener>
+<Listener event="startload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters>
+<Parameter>
+<Attributes name="paralist"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$paralist]]></Attributes>
+</O>
+</Parameter>
+</Parameters>
+<Content>
+<![CDATA[var sHight = document.body.clientHeight * 0.3 + "px"
+var aHight = document.body.clientHeight * 0.55 + "px"
+var bHight = document.body.clientHeight * 0.65 + "px"
+FR.HtmlLoader.loadingEffect=function(){}
+var newdiv = document.createElement("div");
+newdiv.id = "newdiv"
+newdiv.style.top = '50%'
+newdiv.innerHTML += '<div id="svgdiv" style="position:absolute;width: 100%; height: 60px; top: ' + sHight + '; left: 0px;text-align: center;line-height: 100px"><svg version="1.1" id="L4" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 40 180 180" enable-background="new 0 0 0 0" xml:space="preserve"><circle fill="#89c4f4" stroke="none" cx="65" cy="50" r="4"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.1"></animate></circle> <circle fill="#89c4f4" stroke="none" cx="77.5" cy="50" r="4"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.2"></animate></circle><circle fill="#89c4f4" stroke="none" cx="90" cy="50" r="4"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.3"></animate> </circle><circle fill="#89c4f4" stroke="none" cx="102.5" cy="50" r="4"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.4"></animate> </circle><circle fill="#89c4f4" stroke="none" cx="115" cy="50" r="4"><animate attributeName="opacity" dur="1s" values="0;1;0" repeatCount="indefinite" begin="0.5"></animate></circle></svg></div>' 
+//newdiv.innerHTML += '<div id = "tipsA" style="position:absolute;width: 100%; height: 40px; top: ' + aHight + '; left: 0px;text-align: center; color: black; font-size:20px">正等待页面返回结果...</div>' 
+//newdiv.innerHTML += '<div id = "tipsB" style="position:absolute;width: 100%; height: 40px; top: ' + bHight + '; left: 0px;text-align: center; color: orange; font-size:18px">结果返回前，请不要关闭页面</div>'
+
+document.body.appendChild(newdiv)
+
+
+/*增加遮蔽层 */
+this.mask = document.createElement("div");
+this.mask.style.width = window.parent.innerWidth + 'px'
+this.mask.style.height = window.parent.innerHeight + 'px'
+this.mask.style.background = '#fff'
+this.mask.style.opacity = '.1'
+this.mask.style.position = 'fixed'
+this.mask.style.top = '0'
+this.mask.style.left = '0'
+this.mask.style.zIndex = '10086'
+this.mask.id = 'mask_div'
+window.parent.document.body.appendChild(this.mask)]]></Content>
+</JavaScript>
+</Listener>
+<ToolBars/>
+<WebPage isPage="true" showAsImage="false" autoScale="false" tdHeavy="false" pageFixedRow="false" pageFixedRowCount="30"/>
+</WebPageContent>
+</ReportWebAttr>
+<ElementCaseMobileAttr>
+<ElementCaseMobileAttrProvider horizontal="1" vertical="1" zoom="true" refresh="false" isUseHTML="false" isMobileCanvasSize="false" appearRefresh="false" allowFullScreen="false" allowDoubleClickOrZoom="true" functionalWhenUnactivated="false"/>
+</ElementCaseMobileAttr>
+<Report class="com.fr.report.worksheet.WorkSheet" name="sheet1">
+<ReportPageAttr>
+<HR/>
+<FR/>
+<HC/>
+<FC/>
+<USE REPEAT="false" PAGE="false" WRITE="false"/>
+</ReportPageAttr>
+<ColumnPrivilegeControl/>
+<RowPrivilegeControl/>
+<RowHeight defaultValue="723900">
+<![CDATA[2880000,4320000,723900,723900,723900,723900,723900,723900,723900,723900,723900]]></RowHeight>
+<ColumnWidth defaultValue="2743200">
+<![CDATA[5760000,5760000,5760000,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200]]></ColumnWidth>
+<CellElementList>
+<C c="0" r="0" cs="3" s="0">
+<O t="DSColumn">
+<Attributes dsName="json1" columnName="success"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Parameters/>
+<cellSortAttr/>
+</O>
+<PrivilegeControl/>
+<CellGUIAttr adjustmode="0" showAsHTML="true"/>
+<CellPageAttr/>
+<Present class="com.fr.base.present.FormulaPresent">
+<Content>
+<![CDATA[=if($$$="true","<span id = 'rs' >成功！</span>","<span id = 'rs' >失败！</span>")]]></Content>
+</Present>
+<Expand dir="0">
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="3" r="0" s="1">
+<O t="DSColumn">
+<Attributes dsName="json1" columnName="data"/>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Result>
+<![CDATA[$$$]]></Result>
+<Parameters/>
+<cellSortAttr>
+<sortExpressions/>
+</cellSortAttr>
+</O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="0" r="1" cs="3" s="2">
+<O t="DSColumn">
+<Attributes dsName="json1" columnName="msg"/>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Result>
+<![CDATA[$$$]]></Result>
+<Parameters/>
+<cellSortAttr>
+<sortExpressions/>
+</cellSortAttr>
+</O>
+<PrivilegeControl/>
+<CellGUIAttr adjustmode="0" showAsHTML="true"/>
+<CellPageAttr/>
+<Present class="com.fr.base.present.FormulaPresent">
+<Content>
+<![CDATA[=if($$$="成功","<span id = 'rsMsg' >请在附件下载相应申请页面模板！</span>","<span id = 'rsMsg' >" + $$$ + D1 + "</span>")]]></Content>
+</Present>
+<Expand dir="0">
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="3" r="1" s="2">
+<PrivilegeControl/>
+<Expand/>
+</C>
+</CellElementList>
+<ReportAttrSet>
+<ReportSettings isHorizontalCenterOnPage="true" isVerticalCenterOnPage="true" headerHeight="0" footerHeight="0">
+<PaperSetting>
+<PaperSize width="28800000" height="10080000"/>
+<Margin top="986400" left="2743200" bottom="986400" right="2743200"/>
+</PaperSetting>
+<FollowingTheme background="false"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-1" hor="-1" ver="-1"/>
+</color>
+</Background>
+</ReportSettings>
+<Header reportPageType="0">
+<Background name="NullBackground"/>
+<LeftList/>
+<CenterList/>
+<RightList/>
+</Header>
+<Footer reportPageType="0">
+<Background name="NullBackground"/>
+<LeftList/>
+<CenterList/>
+<RightList/>
+</Footer>
+</ReportAttrSet>
+<PrivilegeControl/>
+</Report>
+<ReportParameterAttr>
+<Attributes showWindow="true" delayPlaying="true" windowPosition="1" align="0" useParamsTemplate="true" currentIndex="4"/>
+<PWTitle>
+<![CDATA[参数]]></PWTitle>
+</ReportParameterAttr>
+<StyleList>
+<Style horizontal_alignment="0" vertical_alignment="3" imageLayout="1" spacingAfter="10">
+<FRFont name="微软雅黑" style="1" size="128"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+<Style horizontal_alignment="0" vertical_alignment="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="96"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-2500135" hor="-1" ver="-1"/>
+</color>
+</Background>
+<Border/>
+</Style>
+<Style horizontal_alignment="0" vertical_alignment="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="96"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+</StyleList>
+<DesensitizationList/>
+<DesignerVersion DesignerVersion="LAA"/>
+<PreviewType PreviewType="0"/>
+<TemplateThemeAttrMark class="com.fr.base.iofile.attr.TemplateThemeAttrMark">
+<TemplateThemeAttrMark name="兼容主题" dark="false"/>
+</TemplateThemeAttrMark>
+<TemplateIdAttMark class="com.fr.base.iofile.attr.TemplateIdAttrMark">
+<TemplateIdAttMark TemplateId="9b2d6ad9-817c-4a9b-b218-c42d084c86ba"/>
+</TemplateIdAttMark>
+<TemplateCloudInfoAttrMark class="com.fr.plugin.cloud.analytics.attr.TemplateInfoAttrMark" pluginID="com.fr.plugin.cloud.analytics.v11" plugin-version="3.18.0.20230712">
+<TemplateCloudInfoAttrMark createTime="1676942378726"/>
+</TemplateCloudInfoAttrMark>
+</WorkBook>

@@ -17,7 +17,6 @@ version: 3.0.0
 | `/fr-data-dev <项目名>` | 数据层工程师 | 生成 data CPT + 接口验证 |
 | `/fr-display-dev <项目名>` | 展示层工程师 | antd + React 页面开发 |
 | `/fr-qa <项目名>` | 测试工程师 | 逐项验证 → 产出测试报告 |
-| `/fr-accept <项目名>` | 验收 | 确认交付 |
 
 ## 完整流水线
 
@@ -30,8 +29,6 @@ version: 3.0.0
 /fr-display-dev myproject       # 3. 展示层开发（antd + React）
     ↓ 自动触发
 /fr-qa myproject                # 4. 浏览器测试验证
-    ↓
-/fr-accept myproject            # 5. 验收交付
 ```
 
 ## 核心理念
@@ -64,6 +61,7 @@ Agent 启动时已注入环境变量（通过 settings.json），所有角色直
 | 文档 | 位置 | 说明 |
 |------|------|------|
 | 架构设计 | `shared/KNOWLEDGE/ARCHITECTURE.md` | 核心理念、接口分工、模板设计 |
+| 公共组件 | `shared/KNOWLEDGE/ASSETS.md` | 附件管理、API代理等可复用模板，业务开发直接引用 |
 | 环境注意事项 | `shared/KNOWLEDGE/FINEREPORT_ENV.md` | 帆软环境配置、常见错误 |
 | antd 组件指南 | `shared/KNOWLEDGE/ANTD_REACT_GUIDE.md` | antd 5.x + React 18 组件速查（display-dev 专用） |
 | JS 安全规范 | `shared/KNOWLEDGE/JS_SAFETY.md` | XSS 防护、JSON 安全解析（display-dev 专用） |

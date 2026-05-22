@@ -114,8 +114,7 @@
           "name": { "type": "string", "description": "页面文件名（不含扩展名，如 employee_list）" },
           "type": {
             "type": "string",
-            "enum": ["list", "form", "selector", "batch", "detail"],
-            "description": "页面类型"
+            "description": "页面类型。已支持：list(列表)、form(表单弹窗)、detail(详情页)、batch(批量导入)、selector(选择器)。未匹配类型回退到通用骨架 starter.jsx"
           },
           "title": { "type": "string", "description": "页面标题（显示用）" },
           "comment": { "type": "string", "description": "页面说明" },

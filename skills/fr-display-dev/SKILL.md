@@ -58,11 +58,13 @@ JSX 源码位置:         $FR_PROJECTS_DIR/{project}/pages/
 
 | 全局变量 | 说明 | JSX 中使用方式 |
 |----------|------|---------------|
-| `React` | React 18 | `React.useState()`, `React.useEffect()` |
-| `ReactDOM` | ReactDOM 18 | `ReactDOM.createRoot()` |
-| `antd` | antd 5.x | `const { Table, Button, Modal } = antd;` |
-| `antdIcons` | @ant-design/icons | `const { SearchOutlined } = antdIcons;` |
+| `React` | React 18 (18.3.1) | `React.useState()`, `React.useEffect()` |
+| `ReactDOM` | ReactDOM 18 (18.3.1) | `ReactDOM.createRoot()` |
+| `antd` | antd 5.x (5.21.0) | `var { Table, Button, Modal } = antd;` |
 | `dayjs` | dayjs 日期库 | `dayjs().format('YYYY-MM-DD')` |
+
+> **图标**：`antdIcons` React 组件库不存在。**禁止使用 `<img>` 标签加载图标**（SVG 作为隔离文档无法继承 `currentColor`，按钮图标不显示）。正确做法：init 时从 `/webroot/help/lib/antd/icons/outlined/` 同步拉取 SVG 文件缓存，`icon('名字')` 直接使用。脚手架已预置 12 个常用图标，添加新图标只需在 `names` 数组加名字。详见 `shared/KNOWLEDGE/ANTD_REACT_GUIDE.md` 图标章节。
+> **推荐**：`antd.message.success()` 静态 API 替代 `App.useApp()` hook（iframe 中更可靠）。
 
 ---
 
@@ -111,26 +113,37 @@ mkdir -p "$FR_PROJECTS_DIR/{project}/pages"
 mkdir -p "$FR_REPORTLETS/{project}/pages"
 ```
 
-### 2. 复制起步模板
+### 2. 按页面类型选择脚手架
 
-每个页面从 `starter.jsx` 复制起步：
+根据 `dev_task.json` 中 `pages[].type` 复制对应脚手架：
 
 ```bash
-cp "$FR_WORKSPACE/foundation/scaffolds/starter.jsx" \
+# type → 脚手架映射
+case "{type}" in
+  list)     SCAFFOLD="starter_list.jsx" ;;
+  form)     SCAFFOLD="starter_form.jsx" ;;
+  detail)   SCAFFOLD="starter_detail.jsx" ;;
+  batch)    SCAFFOLD="starter_batch.jsx" ;;
+  selector) SCAFFOLD="starter_selector.jsx" ;;
+  *)        SCAFFOLD="starter.jsx" ;;        # 未知类型 → 通用骨架
+esac
+
+cp "$FR_WORKSPACE/foundation/scaffolds/$SCAFFOLD" \
    "$FR_PROJECTS_DIR/{project}/pages/{page_name}.jsx"
 ```
 
 ### 3. 理解页面类型
 
-`dev_task.json` 的 `pages[]` 定义了每个页面的类型和职责：
+| type | 脚手架 | 布局约定 |
+|------|--------|----------|
+| `list` | starter_list.jsx | 搜索栏(左)+新增按钮(右) → Table → 分页。操作列固定在表格右侧 |
+| `form` | starter_form.jsx | Modal弹窗，Form vertical。按钮区底对齐：取消(左)+保存(右) |
+| `detail` | starter_detail.jsx | 独立页面，Descriptions bordered。顶部返回按钮，底部编辑/返回居中 |
+| `batch` | starter_batch.jsx | 4步向导(选择→预览→写入→结果)，自定义步骤条+进度条+统计卡片 |
+| `selector` | starter_selector.jsx | Modal弹窗，搜索栏+Table(rowSelection)+底部固定栏(已选摘要+确定) |
+| 其他 | starter.jsx | 通用骨架，无预设布局，开发者根据 page.comment 自行组织 |
 
-| 页面类型 | 命名建议 | 说明 |
-|----------|----------|------|
-| `list` | `{module}_list.jsx` | 列表页（挂菜单入口），含搜索、表格、分页、CRUD 按钮 |
-| `form` | `{module}_form.jsx` | 表单弹窗（新增/编辑），含表单验证、提交 |
-| `selector` | `{module}_selector.jsx` | 选择器弹窗（可选），含搜索、选择按钮 |
-| `batch` | `{module}_batch.jsx` | 批量导入页（可选），含文件上传、校验结果 |
-| `detail` | `{module}_detail.jsx` | 详情页（可选），只读展示 |
+> **未知 type 不阻塞**：`type` 已在 schema 中从 `enum` 改为 `string`。新类型不会在 schema 层被拒绝，display-dev 回退到 `starter.jsx` 从零搭建。
 
 ### 4. 固定段保护（禁止修改）
 
@@ -157,12 +170,11 @@ cp "$FR_WORKSPACE/foundation/scaffolds/starter.jsx" \
 ```jsx
 function App() {
     // 使用全局变量，不需要 import
-    const { Table, Button, Modal, Space, Input, Form, message } = antd;
-    const { SearchOutlined, PlusOutlined } = antdIcons;
+    var { Table, Button, Modal, Space, Input, Form } = antd;
 
-    const [data, setData] = React.useState([]);
-    const [loading, setLoading] = React.useState(false);
-    const [modalVisible, setModalVisible] = React.useState(false);
+    var [data, setData] = React.useState([]);
+    var [loading, setLoading] = React.useState(false);
+    var [modalVisible, setModalVisible] = React.useState(false);
 
     // 业务逻辑...
 }
@@ -544,5 +556,6 @@ Skill({ skill: "fr-qa", args: "--project {project}" })
 |------|--------|------|
 | `shared/KNOWLEDGE/ANTD_REACT_GUIDE.md` | 开工必读 | antd 5.x + React 18 组件速查（Table/Form/Modal/Select 等） |
 | `shared/KNOWLEDGE/JS_SAFETY.md` | 开工必读 | XSS 防护、innerHTML 风险、JSON 安全解析 |
+| `shared/KNOWLEDGE/ASSETS.md` | 场景路由时 | 附件管理、API代理等公共组件，命中时直接引用无需开发 |
 | `shared/KNOWLEDGE/ARCHITECTURE.md` | 需要 API 细节时 | `/api/data` 格式、PATH 对象详解、iframe 通信、页面引导 |
 | `shared/KNOWLEDGE/FINEREPORT_ENV.md` | 环境异常时 | 帆软环境故障排查 |

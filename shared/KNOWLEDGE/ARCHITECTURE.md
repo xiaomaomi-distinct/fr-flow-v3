@@ -97,6 +97,9 @@
 | 专用数据层 | `*_data.cpt` | SQL/存储过程 | `/api/data` | **每模块1个** |
 | 通用代理 | `api_agent.cpt` | JSON程序数据集 | `/api/report` | **全局1个** |
 | 展示模板 | `*_list.cpt` / `*_form.cpt` | 无 | 调用上述接口 | 按需 |
+| 公共组件 | 参见 ASSETS.md | 按组件而定 | 直接引用 | **全局** |
+
+> **公共组件**：附件管理、API 代理等通用能力已内置为独立模板，业务开发无需重复建设。详见 `shared/KNOWLEDGE/ASSETS.md`。
 
 ### 4.1 专用数据层模板 vs 通用代理
 

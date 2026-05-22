@@ -6,10 +6,10 @@
     "name": "移动化开发中心"
   },
   "skills": [
-    "../skills/fr",
-    "../skills/fr-pm",
-    "../skills/fr-data-dev",
-    "../skills/fr-display-dev",
-    "../skills/fr-qa"
+    "./skills/fr",
+    "./skills/fr-pm",
+    "./skills/fr-data-dev",
+    "./skills/fr-display-dev",
+    "./skills/fr-qa"
   ]
 }

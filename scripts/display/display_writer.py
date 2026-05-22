@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -80,8 +81,12 @@ def compile_jsx_to_mjs(jsx_path: str) -> str:
 
     _info(f"编译 JSX → mjs：{os.path.basename(jsx_path)}")
 
+    esbuild_bin = shutil.which("esbuild") or shutil.which("esbuild.cmd")
+    if not esbuild_bin:
+        _die("找不到 esbuild，请执行 npm install -g esbuild")
+
     cmd = [
-        "esbuild",
+        esbuild_bin,
         jsx_path,
         "--bundle",
         f"--outfile={mjs_path}",

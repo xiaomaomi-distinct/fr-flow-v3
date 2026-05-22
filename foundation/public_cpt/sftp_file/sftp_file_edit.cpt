@@ -1,0 +1,1459 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkBook xmlVersion="20211223" releaseVersion="11.5.0">
+<TableDataMap>
+<TableData name="main_qry" class="com.fr.data.impl.DBTableData">
+<Desensitizations desensitizeOpen="false"/>
+<Parameters>
+<Parameter>
+<Attributes name="file_path_uuid"/>
+<O>
+<![CDATA[]]></O>
+</Parameter>
+</Parameters>
+<Attributes maxMemRowCount="-1"/>
+<Connection class="com.fr.data.impl.NameDatabaseConnection">
+<DatabaseName>
+<![CDATA[common_db]]></DatabaseName>
+</Connection>
+<Query>
+<![CDATA[select a.id, a.file_path_uuid, a.file_dir, a.file_url, a.file_name, a.relative_path, a.file_source, a.operator_oa,
+       a.create_time, a.update_time, a.remark
+  from ftp_file_record a
+ where a.file_path_uuid = '${file_path_uuid}'
+   and a.curr_status = '1'
+ order by a.update_time asc;]]></Query>
+<PageQuery>
+<![CDATA[]]></PageQuery>
+</TableData>
+</TableDataMap>
+<ReportWebAttr>
+<ServerPrinter/>
+<WebPageContent>
+<ToolBars/>
+<WebPage isPage="false" showAsImage="false" autoScale="false" tdHeavy="false" pageFixedRow="false" pageFixedRowCount="30"/>
+</WebPageContent>
+<WebWriteContent>
+<Listener event="startload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters>
+<Parameter>
+<Attributes name="file_path_uuid"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$file_path_uuid]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="busi_path"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$busi_path]]></Attributes>
+</O>
+</Parameter>
+</Parameters>
+<Content>
+<![CDATA[if (file_path_uuid.length == 0 || typeof(file_path_uuid) == 'undefined') {
+	window.parent.FR.Msg.alert("提示", "文件关联id为空，请联系信息科技部！");
+	window.parent.FR.closeDialog();
+	return false;
+}
+
+//if (busi_path.length == 0) {
+//	window.parent.FR.Msg.alert("提示", "业务路径为空，请联系信息科技部！");
+//	window.parent.FR.closeDialog();
+//	return false;
+//}]]></Content>
+</JavaScript>
+</Listener>
+<Listener event="afterwrite">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[if (fr_submitinfo.success) {
+	_g().parameterCommit();
+	$(".fr-core-window-mask").remove()
+	return false;
+} else {
+	window.parent.FR.Msg.alert("错误", fr_submitinfo.failinfo);
+}]]></Content>
+</JavaScript>
+</Listener>
+<ToolBars/>
+<EditRowColor setColor="false"/>
+<WebWrite SheetPosition="3"/>
+<RptLocation isShowAtLeft="true"/>
+<UnloadCheck check="false"/>
+<ShowWidgets show="true"/>
+<OtherAttr autoStash="false"/>
+</WebWriteContent>
+</ReportWebAttr>
+<ElementCaseMobileAttr>
+<ElementCaseMobileAttrProvider horizontal="1" vertical="1" zoom="true" refresh="false" isUseHTML="false" isMobileCanvasSize="false" appearRefresh="false" allowFullScreen="false" allowDoubleClickOrZoom="true" functionalWhenUnactivated="false"/>
+</ElementCaseMobileAttr>
+<Report class="com.fr.report.worksheet.WorkSheet" name="sheet1">
+<ReportPageAttr>
+<HR F="0" T="1"/>
+<FR F="4" T="8"/>
+<HC/>
+<FC/>
+<UPFCR COLUMN="false" ROW="true"/>
+<USE REPEAT="false" PAGE="false" WRITE="false"/>
+</ReportPageAttr>
+<ColumnPrivilegeControl/>
+<RowPrivilegeControl/>
+<RowHeight defaultValue="723900">
+<![CDATA[1152000,1440000,1152000,1152000,876300,864000,723900,1008000,723900,723900]]></RowHeight>
+<ColumnWidth defaultValue="2743200">
+<![CDATA[1152000,1447800,419100,2736000,1728000,2880000,2736000,1872000,2880000,2736000,1152000,720000,3314700,2743200]]></ColumnWidth>
+<CellElementList>
+<C c="0" r="0">
+<PrivilegeControl/>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="16" r="0" s="0">
+<O>
+<![CDATA[文件下载方式]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="17" r="0" s="0">
+<O>
+<![CDATA[下载文件名]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="0" r="1" s="1">
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="1" r="1" s="2">
+<O>
+<![CDATA[序号]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="2" r="1" cs="8" s="2">
+<O>
+<![CDATA[文件]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="10" r="1" cs="2" s="2">
+<O>
+<![CDATA[操作]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="12" r="1" s="0">
+<O>
+<![CDATA[下载链接]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="13" r="1" s="0">
+<O>
+<![CDATA[文件来源]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="14" r="1" s="0">
+<O>
+<![CDATA[记录id]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="15" r="1" s="0">
+<O>
+<![CDATA[业务表关联字段]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[隐藏列]]></Name>
+<Condition class="com.fr.data.condition.ListCondition"/>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.ColWidthHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="16" r="1" s="0">
+<O t="I">
+<![CDATA[0]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="17" r="1" s="0">
+<O>
+<![CDATA[文件名]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="0" r="2">
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[无数据]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[COUNT(D3) = 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.RowHeightHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="1" r="2" s="3">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=SEQ()]]></Attributes>
+</O>
+<PrivilegeControl/>
+<Expand dir="0" leftParentDefault="false" left="D3"/>
+</C>
+<C c="2" r="2" s="4">
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="3" r="2" cs="7" s="5">
+<O t="DSColumn">
+<Attributes dsName="main_qry" columnName="file_name"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper">
+<Attr divideMode="1"/>
+</RG>
+<Parameters/>
+<cellSortAttr/>
+</O>
+<PrivilegeControl/>
+<CellGUIAttr adjustmode="0"/>
+<CellPageAttr/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[决策系统来源文件下载链接]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 = "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.FRFontHighlightAction">
+<FRFont name="微软雅黑" style="0" size="80" underline="17">
+<foreground>
+<FineColor color="-12477447" hor="-1" ver="-1"/>
+</foreground>
+</FRFont>
+</HighlightAction>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters>
+<Parameter>
+<Attributes name="file_url"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=M3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="file_name"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$$$]]></Attributes>
+</O>
+</Parameter>
+</Parameters>
+<Content>
+<![CDATA[window.open(file_url,"下载文件")
+// 写下载日志
+_g().setCellValue(16, 1, "1");
+_g().setCellValue(17, 1, file_name);
+setTimeout(() => {
+	_g().verifyAndWriteReport();
+}, 100);]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[非决策系统来源文件]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 <> "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.FRFontHighlightAction">
+<FRFont name="微软雅黑" style="0" size="80">
+<foreground>
+<FineColor color="-8355712" hor="-1" ver="-1"/>
+</foreground>
+</FRFont>
+</HighlightAction>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[FR.Msg.alert("提示", "非决策系统上传文件，不允许下载！");]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+</HighlightList>
+<Expand dir="0" leftParentDefault="false">
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="10" r="2" s="6">
+<O>
+<![CDATA[删除]]></O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[决策系统来源文件删除确认]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 = "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="网络报表2">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<Parameters>
+<Parameter>
+<Attributes name="delete_id"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=O3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="file_name"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=D3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="deal_type"/>
+<O>
+<![CDATA[1]]></O>
+</Parameter>
+</Parameters>
+<TargetFrame>
+<![CDATA[_dialog]]></TargetFrame>
+<Features width="500" height="200"/>
+<ReportletName showPI="true">
+<![CDATA[/public_cpt/sftp_file/sftp_file_del_confirm.cpt&op=write]]></ReportletName>
+<Attr>
+<DialogAttr class="com.fr.js.ReportletHyperlinkDialogAttr">
+<O>
+<![CDATA[删除确认]]></O>
+<Location center="true"/>
+</DialogAttr>
+</Attr>
+</JavaScript>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[非决策系统来源文件]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 <> "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.FRFontHighlightAction">
+<FRFont name="微软雅黑" style="0" size="80">
+<foreground>
+<FineColor color="-8355712" hor="-1" ver="-1"/>
+</foreground>
+</FRFont>
+</HighlightAction>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[FR.Msg.alert("提示", "非决策系统上传文件，不允许删除！");]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+</HighlightList>
+<Expand dir="0"/>
+</C>
+<C c="11" r="2" s="7">
+<O t="XMLable" class="com.fr.general.ImageWithSuffix">
+<FineImage fm="png" imageId="__ImageCache__72FD2A9E94EEA86E1C24B60DD75A437D">
+<IM>
+<![CDATA[!EBK,oncL?7h#eD$31&+%7s)Y;?-[sO8o7\O9c$j!!)1Oij\sg$62W*5u`*!m@=WD?:>UL8&
+'C??A2:dh<t$^9WLR;7+>TUM=H9*W"EAK,q9h[Qmais@tA;]A`'C,s_7(PP#f\!#`<=,HL`22
+N#%&pPHbZbr)d$905oR\KJoj0=mU?Nhmc2U:\bE`!TDZ!jV<sdorcdeS]AlRhN&rB"#O[p`1M
+*rPM80k4E#$)blmrdLND>%sfoVK*N/%gKbn`P&Ol6#+ghjRcZ%=d6oS\>\crEB-tDrImJ$%M
+sfDr@C=Qb@9@='=rn6kM:ne:D:rPL0LLj\F^k/_l1IB0q3"k9FZC44%6io.IYJYh:P:ita4D
+K,*ZJmlGC(Smqj<F:/lYZ-\5.(pFDJm9a<a5)VSS8RuB"gkbYK.M<M4':S&J4GI"#Trogq*6
+4U#d@Bb>[1!GL%L\Nm)e9O_pcY)1rDRL^!Sf\OV'`dr@0+*"r/9A>eU"'_q"(f5<GIa[Vl`c
+ZWh+jPJFDueCSD\\2tfjN)t]ABRcLF^\n#E-rL/[""9c.grpF)Kp.dCHQF$:;,3*[JYVYMS03
+-TA+)@:amjRVi+l4EA%1f?,%4Thn-%q-(mi%??pO/2fE)uUiGH8J6H0fTqqS3M!0Y?o"VDtG
+d>[AgQkXr9UdCde!d(T`A<D;<"[Vj=CFgpO/QqDN[HhQ@o102_nFgR@SB-ZI\=2Teb&Ib8:7
+_+dlm`dj+if8`im]A'>sDlC5;Ad:b4`PXk.F-5Sgj`N*[B]A`:D"jfqf]AZ@,LhM-%tZGN+AbbU
+;M;]A=-*EkeYI)hZ*'mIHZ3PP[Ehs7oO:eVj6^ufFpElco\Y\C#$*+Y/8$PpljGR0]A2?\Y'D_
+K\mq/*-O020D0?81m44)9G^0PoAl!(jJR+7ArA\cmBFNm/r^=14Gc6b21KkWLNPD)MJHAU:[
+r5QI`je1:?k&?HQ?W0Xp;@8a!IpV:$FmdS+O,A*a.4pCWH\eXiV(:(RXNc)T.FF.'W1JJDN?
+o^-HFUS))TqcGc3<ra6f/l'Ad(P=[gsS/8W.KFgsU+,Sa']AaIX5W_%\L`TA)1%e(g0nhJkCY
+qB0ioV-;.2SPlaAXKgQrm2b:_p?EPA6<G_NlpNc'N%:a0&JOM&&?7EM'-J%mc0^D)SH,?-Kn
+U$b2\/%epJ128%UKEke_?9`lfk`cp:uB4-A&ReR>9S_XhL8fBH\X"Zl_RH"4>Ct2$d:i%!Dt
+j,VkH6\:YN*(^TPgDB=+A^`B?b&)*d$Y(7R?QTI_]A+r3(+1Jdfu]A=d_RC@F.T:KgU6`B^tbZ
+ag/Pi_qfr1QI#+r.[9m+U.@ni9$_=6hpftP$h]Aon5YCWaZdN^R#hk]A(Y1iHhom1,O:"&:.]A@
+p^3$[jaKTl[m#D8GB0^r!.J;!P/4a9g8"6D-sO#n20K0YoNk#VMH58YP(<rY.@J`-"`_$D"b
+]A!ntjmMf.2ZNh\Y60mAX)5qK3GjZ[W55IEeE?t_7?@1Hn#csP&aZt(m]AJsJT^"!3)F'Xk,I9
+C";,IEpCI='OGB`/Z_:g07Qe!QK&b>Y'4)TZN_XC`TQIh9AgYRA!Z@'Wj6C2?PMXfF!Yf]A?7
+FnS<2_V8f7qIi[/"E4$ZmZugQqk=!!.3;@cq#%E/`*3Fc=>9>8SX]AF=j-Uk\`[o@)^rZtL*)
+KpP%r.u,9VjC[#a[CE^L;c+TcGJVUVk+nWG9U%9X7sgd]AAd#-]Ai)c-oKIgIOc,eV]A\'t9^0^
+<uOrH6c<ZMah5WF,c9XqHdSkuL!5*t&tndsR^%4Vd6+CO%oF,DlC*`:+He0+U?;%.!AEs(SX
+ZI4+U?<)^H]AHp%\.NPK+jVDIe$N]AiGRM.ip%pgoZn5O-:D8mEd;83L'1XTOG>(&X5"V3\q29
+Na`0m]AOq<kfbRhF+<Y$?bS!/"t<+]A:Q1TYWUV\L^cECUB/6"m>Z,NUj]A(o`S>mu>Q)HRUCI]A
+s_q#1>F&B"W<I^8GHTe`i^Z<)p21]Af$.[=?K>J2J'IIp7!)G*F%7;^sh:A:XWp12pZ2->-**
+C\.&YVqQ]AY"Rjo1W*8-PHpit^C/25Q*MI<R;+#M@0,8IfK_c_.!jQ^.iE$;W98.*+n.eXX@`
+[HQO1a$mk"]Ad=#/)8.Mo\&#:$#Ka'7ST$l%_6\PRLSmahRr&1tZT%Rru"I1mI95dQ71ncpG9
+A[#@?$t:>W0'@hoNNL%@6h1_iX?fZL,3TJ(:]AoZ`H9-7H698e&@o*9PDY"KL]AnoQIBKs]Ah]A@
+G)H^)[?G^->W.a\Lq-:.RXOjYbH"IMD'7eLse_'E/(QfRjlI)X)6>%FcIucY!bdLk]A9=ej_M
+.M=une%TJ77e[J",%uGHB@h2TG%W//5`'>Rf9Q0&'=9qKO1W&i5DmNC;K,0'db>(`GT[H4<m
+U-Q1W/S4TgZ7K?jgObmmbid!R-[cf"-k3rYu%d3E#Y9l8A;!^`*:oim"l:>!:3JOgh0q,)1<
+r`15*VES#ln<]AbIT_LH?ZrU6r$0&l2'?S,-_ob@;i;5dle:0u=!rn-s9=lr19Kc!0"::QY(Q
+i4.sQ.'!eEC#JX2ZLkPrd!h;`X,c-3aLoABngs3>$2`d(gtl/;AGpVpYjcLI:Fo+[T;>i6fF
+oXVd+a.ADJ2(N\2k$#aS?M%?>,+RnWiANDD*PD>M#f.S=/3XS]AI*P&bPsD0(kc]A/m\hpe0(G
+:!q%0&Pi8cn0Fc%[=P>[*5I&+eGOU[KkSJ9k4Lf'O>4;(nmK=%X<_lYTcX#jMU2Eu>b_nqS\
+Oqj%f/U@=NERK(r35*rlZP=.KtFe86q]AeL-i+^)ieIT9DlM:8N)Z6CWe8,p9S]A(A(SQ]A4p<,
+Ak'^]A&=>t\5[/phlFF30.PX7&XV+^j+pkK(guD8GAfe>i&a@T5<H'>*DAYnsBocm+Xhl?@:#
+W:lZ`Y*S5\Y!OB#i@\:c^bI$>=C5t<4"UpW(66RBr\BeRrq/`&_d/2?$>11n%^OE=EdDi0JX
+pmhRN0*Z8@*7-l1@Brc!T7^4cY4dnE9!!@4QQILJih'4o20dfY3(lHW[=-'O<T5S`<b,%RQq
+AAbkK!"pS0b390X3?a=NJXl@W?.n*)gqkisC]AR#'jiXjft^b.YaQAuVqrDVc<M6>jTB'5IMM
+6i[^+1E[(\'lM/q1r4oSL`)M.W9<-^P`<Q=L:;g5IQa[qlmUNf9jifLLOt3S$f#l%\dI?Bki
+T\]AqX:rf'7Sa)2=0g\f&b=H"#W`^6bD+*NplRkR\Ugdn=B#8*VODUYe4]A66iQ^>]AtSToS'it
+ep@M^j9EoL!Ugo51E6>n-P,=E;3=Bp&rB"#O[p`1M+#7_rrU-IKsg1Tidh(0!!#SZ:.26O@"
+J~
+]]></IM>
+</FineImage>
+</O>
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[决策系统来源文件删除确认]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 = "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="网络报表2">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<Parameters>
+<Parameter>
+<Attributes name="delete_id"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=O3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="file_name"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=D3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="deal_type"/>
+<O>
+<![CDATA[1]]></O>
+</Parameter>
+</Parameters>
+<TargetFrame>
+<![CDATA[_dialog]]></TargetFrame>
+<Features width="500" height="200"/>
+<ReportletName showPI="true">
+<![CDATA[/public_cpt/sftp_file/sftp_file_del_confirm.cpt&op=write]]></ReportletName>
+<Attr>
+<DialogAttr class="com.fr.js.ReportletHyperlinkDialogAttr">
+<O>
+<![CDATA[删除确认]]></O>
+<Location center="true"/>
+</DialogAttr>
+</Attr>
+</JavaScript>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[非决策系统来源文件]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[N3 <> "1"]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.FRFontHighlightAction">
+<FRFont name="微软雅黑" style="0" size="80">
+<foreground>
+<FineColor color="-8355712" hor="-1" ver="-1"/>
+</foreground>
+</FRFont>
+</HighlightAction>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[FR.Msg.alert("提示", "非决策系统上传文件，不允许删除！");]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+</HighlightList>
+<Expand dir="0"/>
+</C>
+<C c="12" r="2" s="0">
+<O t="DSColumn">
+<Attributes dsName="main_qry" columnName="file_url"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Parameters/>
+</O>
+<PrivilegeControl/>
+<Expand dir="0"/>
+</C>
+<C c="13" r="2" s="0">
+<O t="DSColumn">
+<Attributes dsName="main_qry" columnName="file_source"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Parameters/>
+</O>
+<PrivilegeControl/>
+<Expand dir="0"/>
+</C>
+<C c="14" r="2" s="0">
+<O t="DSColumn">
+<Attributes dsName="main_qry" columnName="id"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Parameters/>
+</O>
+<PrivilegeControl/>
+<Expand dir="0"/>
+</C>
+<C c="15" r="2" s="0">
+<O t="DSColumn">
+<Attributes dsName="main_qry" columnName="file_path_uuid"/>
+<Complex/>
+<RG class="com.fr.report.cell.cellattr.core.group.FunctionGrouper"/>
+<Parameters/>
+</O>
+<PrivilegeControl/>
+<Expand dir="0"/>
+</C>
+<C c="0" r="3">
+<PrivilegeControl/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[有数据]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[len(D3) > 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.RowHeightHighlightAction"/>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="1" r="3" cs="11" s="8">
+<O>
+<![CDATA[暂无文件]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="3" r="5" s="9">
+<O>
+<![CDATA[全部删除：]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="4" r="5" s="10">
+<O t="XMLable" class="com.fr.general.ImageWithSuffix">
+<FineImage fm="png" imageId="__ImageCache__55663E0ACCF63A6294CEF48F4370A710">
+<IM>
+<![CDATA[!TFA*pPD^A7h#eD$31&+%7s)Y;?-[sRK*<fO9c$j!!)M!EcD'Z#cUB`5u`*!m@DL=,=`<!Q%
+/mji1l>oq'lJA5S;W^J-"p"PBdho'HeEDVr.]Ab)/q@hB!BF.b.sSmRh/YqAu`GCqIfXfi*dE
+[GM#jmEVdH4iZb-uX4=Dsjmp5J[i,2C2Z3C.>Wpm"@O`Gk)?3is`L>dr?OJ[@&BI)u%TX!On
+,D/7h;-m_p9cY#;8@qED0&d)9qZe#LAuIgTSi$d&?LlnQFk!a"mtMrJuYhP'VO4rS_Hc0Ogb
+i3%mMD>[^lU_e3P<XbA`lBqWa.bE3m#/BLg]A9qcYOUe9T;E\L#o/[%hOP<+hWiUW[72reWoc
+[lHtrDL@Y[@S=$^B`%V6V?R>`S"7/h9=-QihX-7m*M-k'6/0:8qiuin-80FABW4`4)L:2g+2
+c>dk-!'/SJ\_Z_q*O.H/YF@'/kVXZUE1&#9,"'MZms(Y[P)AB[HIWc!or?TW*HbCKum:!YfG
+Sd,I>a1thhp!!bRdZq:"^32S)seRoHog8%lrf'p4'V3IfI!OQQ^3o^N:mraXW!SXok:"Bm!Y
+L[:DoGNQ$5\$54&U+O.^B*'$^#R,]A*DVRp[.aW8lj@?scZFpi)f8R<%GVi\?mgKEp*Ouh<@r
+a@2boo6#b[#>q_j@T`uG.o@^gW'.96F#aE=[Jjq'cco4k]A04*TL\-%Hcm%Jjm7!OQP/kii<0
+-3V[p]AcMPWpr_-uph_=-<gU&o"Tu+d!OTEHcsVA^-@f-`!?)Bn`WXZR1-gHmg6_kD>m=sr5T
+:A%X31JP#&%KJBQY2c_#S=G!3IjU1`2mF$)#g[J-H+_0c>W;6J&+KhK+2Fb]A'bPFJ&P]A?NJk
+B)1qS7l@BDUDeG:8&tloAijJ&VX,:p%.BEO'S%IJM<0@Z=aG\jJ'I;d*I*$e$,t]AuT-pVjdU
+r"]AUo0!6$K1<W0h"O^P!1MaX%F+$kg`\6t5\i7XM)<06WTcAEZnueqo4lgq=g@5XF5KX4dX'
+)Xo:Sr'F5KX4;Yi*M1iK1)3[:Q463,@BY4q=!7e5l:4+N&3&lT80GXd'6b]A[p[jM%f16n(X6
+@ggXIH8G:YBV3Beh?C<pLat_PDsEgnr@e%_Y%s`F+*L*I):DL\7JGYWRQU7#Xco@U[q`B[@4
+QPB^UV1Nmq=!#c6s^+fpeR8K5[4\lb*:e.:>rRp/=0]ATW,gt#?)ZEfK0*j<B#7IB2S^]AhL<u
+,DZ>V>J//UI,'P&.+b1>ER\ml!N%9DojPHmiG+AL'^2\'E0roZ<)kb;H;\iQAVidq`C#`_c4
+Eg_]Agf-)@"_]A*(Z11#/962\,44N;C/%I)6BP^2P8)9g)gfTo,FugGM*X^7rQ1kt2?[@<<mn%
+#8;\X0Nbm#r\WF+g@5F%puIN1TlKe2H[]Al,7J[Vm[`b0h`6,83?>'XH>P-\4'E<Ma9\05#eH
+:B9c\d&s4MFCd:o;tosTANgTsSZRhu8IU#sCm2Kd!cO:sgJ[+:V*7Q&Ze?(57cslT@7scOaC
+-#8=$^mfi_?^D+bspEr:]AL4Yf(jY.TkDth'ORqB$k"[!(aKPV$NG8BYA\B$]An`!/8:\L_m\m
+,R\1BM"._[X91o*AFiQ;,m]A`$P'bl/GC>gOuBeE2MO3P,JV?kn6BgE,h,k8-(W:Jn=U&Didc
+_b1RReP)YE6)H<P7u0,9hkJ!U`5kno97\-BoY9N(?N^GQ^9\`N.HsEZ0_@Oq<JWcnKgj>g'b
+&6L/"t"+h[NoAH!6:-Vr1iNjK[e^a<>2$\2?/M@)@[Gm\i^84VX/muTjO38`=\^4TW$9Q)WG
+_WK+]A;[-a9Ke2qQAcl+Q5*<a+>*5ici[(1;YQaGCM-936Uue2Z.HI_(OMWhB'PnX0,O>'6Oi
+)?G8hZqFJh7XH8&0V9Q?hh/OMc60^>cM/@_,K)'/C*P05?3Ic='B3Ji2_qeU5uG-#D:seHT4
+)k/>:?1j.G%+S5S<XcO!Eehc>r[CK-<2FGRLM>!i:)>=2G=lU/!RjDSd[(g(mpRM<<\D1LGR
+:SC1@'bU3KD'4Sg!6Ttd'u_\)I%Ka*-0%C7D/^Y,o72d/u%d8Ig#e)Q7YTLMff'jknNF/$oS
+Lu&qX^P]AqGM\8KF88#1/UYko1Lkeu;[-><T"(2I,i4blRsR&\5e0&W;D1Ub5YUdp<oZdm7)M
++B]AS7C4PY!:"\n&mse@gQsh)4#.*mK%\N'.5irQ%4]AM-]A"o(O_]Aps\f(/X6UbhB"pYRK&Rlb
+n4D4=1;L;9>Lr.o`kR1sV*ol&iAPLMR*9k;*gKL.sm$6;/M;2g8;OH$HT]Ao_P:fWf.)(+g?g
+H9eDn-HR&bM?YV%;ga>ifo-r@B-Wmtp_%nfY$dD)bP!:\M@UG,F:CB/Pc-GMnYWsgm9c=]A:r
+-#2;F`=g[$_R8YkF*!p0\ET9YKJD>Zs%94\P7eMWA\l^KrmP&YW:ZqF4+lq:1rF^-F<;<#da
++R5.cj7I^2i',e;]A(qe#$PqeI@MXI@rO@`.WWSm-X4:I`UX8n[$%i"$!rYES(tRfC@7oOMI(
+Z4@e'DQ2'4`NPh,>#MroqY35%Z`)OfIQRG/bf,s]Ap?CTmRi`f]A?:>if*"(0&0_I_-!H,^9d_
+/`e^@TK@5-V@8O\2((iU`Blp]A6]AVemcDK6S6]A(J_itIiK`k\l0Lr<P(1>GVjR<1lKQN6RRV:
+[=L`riSN(*Wh&2<f>[@<\/pFt$#e@i(I'HKAAOGqNR_;<6NVYDqg$sj7jU.H+UtL>Dk/e_bq
+5'sY,P3$OAOH#e+=UA)?3"*FEa`mW'0X/O7[27sI`'#D3e]A!p!k1N=%%7k^k0qbFhs3bioVW
+p8s7bB&\a[=.!S@>gp6m6rdP<]A\!!!!j78?7R6=>B~
+]]></IM>
+</FineImage>
+</O>
+<PrivilegeControl/>
+<CellGUIAttr>
+<ToolTipText>
+<![CDATA[全部删除]]></ToolTipText>
+</CellGUIAttr>
+<CellPageAttr/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[全部删除链接]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[len(D3) > 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="网络报表2">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<JavaScript class="com.fr.js.ReportletHyperlink">
+<Parameters>
+<Parameter>
+<Attributes name="delete_id"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$file_path_uuid]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="deal_type"/>
+<O>
+<![CDATA[2]]></O>
+</Parameter>
+</Parameters>
+<TargetFrame>
+<![CDATA[_dialog]]></TargetFrame>
+<Features width="500" height="200"/>
+<ReportletName showPI="true">
+<![CDATA[/public_cpt/sftp_file/sftp_file_del_confirm.cpt&op=write]]></ReportletName>
+<Attr>
+<DialogAttr class="com.fr.js.ReportletHyperlinkDialogAttr">
+<O>
+<![CDATA[删除确认]]></O>
+<Location center="true"/>
+</DialogAttr>
+</Attr>
+</JavaScript>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[无数据]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[len(D3) = 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[FR.Msg.alert("提示", "暂无文件可删除！");]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+</HighlightList>
+<Expand/>
+</C>
+<C c="5" r="5" s="11">
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="6" r="5" s="9">
+<O>
+<![CDATA[全部下载：]]></O>
+<PrivilegeControl/>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="7" r="5" s="10">
+<O t="Image">
+<IM>
+<![CDATA[[8m5gdu,$7ji]AQA[JBMmmh%1=WFbm]AE?g[G:VP=Q_q=15b5IQ<N$`JOHqDLUDJnENGf6N4eh
+.TXGD^4Jh+sNg,p1-t+_-Cf]ADKKomU'p_33RC0cT1/KcZu,R]AM<psnGjiO&cmPKOF]Anm@9R%
+1Vnr#5W&X_60a+4H%j^tB9Ij&,8(O:0)KIDhP\U394N5Q'*>O79XcaId`YSF;^?,.;k#!bt.
+,SthZW9iBcj]AStgWCP?(B@45d%#[WdP(7*;bV\DL)G%#HbqATQBqcsdmoMaA_uSR)ZmMAXmp
+Xah_F6D(-+`<2eZoV3WuctrrktC^TFS_"Q"IWnB3gB4sfUSa-[0)AtMsE]Ae2`h1l1)&a\Q=l
++&$<r*.G<Eru`t+'kqKCPlNhq+F36:-52!JhV$NT97j%$BhjjQH!WESbS4-tTm(:jni3ut\:
+be8H2YD<>#7e^'>aRdM%Y01(PMX0q':^\4!83Z6ID:2h)IO]AWj1L7NWqm/d!qQSf>l]A0E<*!
+`8>936'RCjnJ?d]A^FnAqX;Q/_7B,bTWRuKrncZn*="&!Lk6+r&)#8\OhA)S\p=6b3K!b-K:1
+`m'K5&!aO+RC/(J8A/^,2j\.oVl#d0#TuD/8trq5F'V5/Vs51mTa7J3>;(2I!kibEq?H7WPI
+X5k9XE9C]A8e91hgSri_[V/!'W"O!5[#Qdi%<:Eam`,9ON3,m2:9\\r\suq5UV8l.>=ckN<s_
+?:'mf@ekUUl`uVE9$2X&mjRN+FO=ZX@-$q<@DgJnRriF0r+Z&$Q;IIQ)&D.KOUO^$<q%UEJA
+%_`8LRV,/OZd`nC\XraG%-K"VP`D2aE]A2EUhMiT"eV$R%q*X1Hr^5c?mBUMG@J+_l#ic`]A,$
+!l2Ol&g2qdcj/XsCN%Y*7^&a4-J#0SfZMUpTnK'QGp-?W1<f=>smN<:+B-g-t:r(]AT<,VGfZ
+]A)!_]AVhZ?+9%udOVH!olqtbXN-sY(ao`4f\2Wi'T4[W5K&MgkBtW/j_:-#kTJ\=*oUZu6K:O
+\3k.&oe.:npJp@qTGi]AH@Q[/Yq1;6Xq]A`A;,JqFik7'*%$',D<'OA&sU8LrEeFAM5o8-IlbX
+c*hQPmn2bHp875NY"(HKf<,s'9B)g=N&eCPF`1D=p-P;AAKpj3NL#)]A$Ij$r>8+[Jf_:Def:
+NH.VVb;-9>L=`i7L\?XX7N`c;h%4LDer>6<)g\52"FZV:Sn-4<-3eAM5"0g(A5C\$pHjWJX>
+kP4e9@DVO$.a"SG/72n<:=i-%uo,9i&7/d/2-H;/>LKKaj8cOo7<S-e(^<B)s)eTZ(<JHFd;
+;Tuae&"6n_OE]Aqkn]A9d'^FC:aksl4:'.d4^tG?.3iD8]ArO>KX[>#oa>AZa]A6RR<W1kBb5=O$
+5#jH`9@;+okQ`%mEoV%PO%%$?mWLVteKPo+cd7M"id%OU53O-pGp)945+q"#"$c>(E&^iaE(
+g-uN'HZn*&^NfY'dA*A]AWi`d:e[97MHtg[if5Jf6Q?+N3J-NY>9%aiWRq6N/]ArLNIe*6SW0$
+SQE=AT@1@#=kTe6l.HIR&o'OuSn,B_+k;GQ.'7>'VhSC_$55?P^!As#]A'\n55fZ,*.G+PBT+
+8W\F+4F"9066jTQ>"+klH45<mjThjGQ[9[%bB0720BT,d+(1G[j.F6<&0Y)AFKr@aQ"/jHah
+i+m`4"h-k9D$`F@G>G=NK:W7N3D,L-#N(<m8eHM<"&FAXF$^Y:8c+_E>JJh72\ui4rsMG]A7!
+!k:TOP=G+PsZZsV.>lKF4"Rg5?iY"VO0D?eZLV_6Zam=Eq%E;l>,)hMnr^:Z,g6s$N]AXHlTL
+6u#Xh^_q"U.,>&/37o#\Uoo2j<=.40_ICgoDP!@U!uDbS)<cQG_2>X1*MlNNgMs?$PZ'5acf
+1Tt9-$0(M"_^E1Kd3,l72AgGMgj-DA>%8;2ia8lMOOU<p"/;lUM6tU^j*<#"D2gm>K@`Y[sS
+<i?]Ag9`[(+Xfo7kRLeZJe:S6RnbD0UL6j)sMS]A+i1ZFg*3KTZ*,4'cp<:HR0tq,<pR?:5IEs
+-@jJp&Wqa[&i0>l.VjT:&B/XJc<\]A%>Un8IfK~
+]]></IM>
+</O>
+<PrivilegeControl/>
+<CellGUIAttr>
+<ToolTipText>
+<![CDATA[全部下载]]></ToolTipText>
+</CellGUIAttr>
+<CellPageAttr/>
+<HighlightList>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[全部下载链接]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[count(D3) > 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本2">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters>
+<Parameter>
+<Attributes name="urlArray"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=M3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="fileNameArray"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=D3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="fileSourceArray"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=N3]]></Attributes>
+</O>
+</Parameter>
+<Parameter>
+<Attributes name="zipName"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$fine_username + FORMAT(NOW(), "yyyyMMddHHmmss")]]></Attributes>
+</O>
+</Parameter>
+</Parameters>
+<Content>
+<![CDATA[// 写下载日志
+_g().setCellValue(16, 1, "2");
+_g().setCellValue(17, 1, "");
+setTimeout(() => {
+	_g().verifyAndWriteReport();
+}, 100);
+
+// 过滤文件来源
+let fileSourceFilter = (ele,index) => {
+    return fileSourceArray[index]A === "1"
+}
+urlArray = []A.concat(urlArray).filter(fileSourceFilter)
+fileNameArray = []A.concat(fileNameArray).filter(fileSourceFilter)
+//urlArray = urlArray.filter(fileSourceFilter)
+//fileNameArray = fileNameArray.filter(fileSourceFilter)
+
+// 打包下载
+myFR.attachment.downloadBatch(urlArray, fileNameArray, zipName);]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+<Highlight class="com.fr.report.cell.cellattr.highlight.DefaultHighlight">
+<Name>
+<![CDATA[无数据]]></Name>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[len(D3) = 0]]></Formula>
+</Condition>
+<HighlightAction class="com.fr.report.cell.cellattr.highlight.HyperlinkHighlightAction">
+<NameJavaScriptGroup>
+<NameJavaScript name="JavaScript脚本1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[FR.Msg.alert("提示", "暂无文件可下载！");]]></Content>
+</JavaScript>
+</NameJavaScript>
+</NameJavaScriptGroup>
+</HighlightAction>
+</Highlight>
+</HighlightList>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="9" r="5" s="9">
+<O>
+<![CDATA[添加附件：]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+<C c="10" r="5" cs="2">
+<PrivilegeControl/>
+<CellGUIAttr showAsDefault="true">
+<ToolTipText>
+<![CDATA[添加附件]]></ToolTipText>
+</CellGUIAttr>
+<CellPageAttr/>
+<Widget class="com.fr.plugin.file.load.delight.widget.multi.file.uploader.parameter.DelightMultiFileEditor" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<Listener event="callback" name="上传后1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[_g().setCellValue(16, 1, "0");
+var cell = _g().curLGP.getTDCell(0, 0);
+setTimeout(function() {
+	_g().curLGP.selectTDCell(cell);
+	_g().verifyAndWriteReport();
+}, 50)]]></Content>
+</JavaScript>
+</Listener>
+<WidgetAttr aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<FileAttr maxlength="1" maxSize="0.0">
+<MultiFileUploaderMobileAttr uploadMode="0"/>
+</FileAttr>
+</Widget>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+<C c="9" r="7" cs="2">
+<PrivilegeControl/>
+<Widget class="com.fr.form.ui.FreeButton">
+<Listener event="click" name="点击1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[window.parent.FR.closeDialog();]]></Content>
+</JavaScript>
+</Listener>
+<WidgetAttr aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<Text>
+<![CDATA[关闭]]></Text>
+<Hotkeys>
+<![CDATA[]]></Hotkeys>
+</Widget>
+<Expand/>
+</C>
+<C c="0" r="8">
+<O>
+<![CDATA[ ]]></O>
+<PrivilegeControl/>
+<Expand/>
+</C>
+</CellElementList>
+<ReportAttrSet>
+<ReportSettings headerHeight="0" footerHeight="0">
+<PaperSetting/>
+<FollowingTheme background="false"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-1" hor="-1" ver="-1"/>
+</color>
+</Background>
+</ReportSettings>
+<Header reportPageType="0">
+<Background name="NullBackground"/>
+<LeftList/>
+<CenterList/>
+<RightList/>
+</Header>
+<Footer reportPageType="0">
+<Background name="NullBackground"/>
+<LeftList/>
+<CenterList/>
+<RightList/>
+</Footer>
+</ReportAttrSet>
+<ReportWriteAttr>
+<SubmitVisitor class="com.fr.report.write.BuiltInSQLSubmiter">
+<Name>
+<![CDATA[插入数据表]]></Name>
+<Attributes dsName="common_db"/>
+<DMLConfig class="com.fr.write.config.IntelliDMLConfig">
+<Table schema="" name="ftp_file_record"/>
+<ColumnConfig name="file_path_uuid" isKey="true" skipUnmodified="false">
+<Parameter>
+<Attributes name="file_path_uuid"/>
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=UUID()]]></Attributes>
+</O>
+</Parameter>
+</ColumnConfig>
+<ColumnConfig name="file_dir" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=CONCATENATE($file_upload_dir_new,"/",$busi_path,"/",$file_path_uuid,"/",FILENAME(K6))]]></Attributes>
+</O>
+</ColumnConfig>
+<ColumnConfig name="file_url" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=CONCATENATE($file_service_ip_new,"/",$busi_path,"/",$file_path_uuid,"/",FILENAME(K6))]]></Attributes>
+</O>
+</ColumnConfig>
+<ColumnConfig name="file_name" isKey="true" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=FILENAME(K6)]]></Attributes>
+</O>
+</ColumnConfig>
+<ColumnConfig name="relative_path" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=CONCATENATE("/",$busi_path,"/",$file_path_uuid,"/",FILENAME(K6))]]></Attributes>
+</O>
+</ColumnConfig>
+<ColumnConfig name="file_source" isKey="false" skipUnmodified="false">
+<O>
+<![CDATA[1]]></O>
+</ColumnConfig>
+<ColumnConfig name="operator_oa" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$fine_username]]></Attributes>
+</O>
+</ColumnConfig>
+<ColumnConfig name="curr_status" isKey="false" skipUnmodified="false">
+<O>
+<![CDATA[1]]></O>
+</ColumnConfig>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[Q2 <> '1' && Q2 <> '2']]></Formula>
+</Condition>
+</DMLConfig>
+</SubmitVisitor>
+<SubmitVisitor class="com.fr.report.write.BuiltInSQLSubmiter">
+<Name>
+<![CDATA[全部下载写下载记录表]]></Name>
+<Attributes dsName="common_db"/>
+<DMLConfig class="com.fr.write.config.IntelliDMLConfig">
+<Table schema="" name="ftp_file_download_his"/>
+<ColumnConfig name="file_path_uuid" isKey="false" skipUnmodified="false">
+<Parameter>
+<Attributes name="file_path_uuid"/>
+<O>
+<![CDATA[]]></O>
+</Parameter>
+</ColumnConfig>
+<ColumnConfig name="download_type" isKey="false" skipUnmodified="false">
+<ColumnRow column="16" row="1"/>
+</ColumnConfig>
+<ColumnConfig name="operator_oa" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$fine_username]]></Attributes>
+</O>
+</ColumnConfig>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[Q2 = '2']]></Formula>
+</Condition>
+</DMLConfig>
+</SubmitVisitor>
+<SubmitVisitor class="com.fr.report.write.BuiltInSQLSubmiter">
+<Name>
+<![CDATA[单独下载写下载记录表]]></Name>
+<Attributes dsName="common_db"/>
+<DMLConfig class="com.fr.write.config.IntelliDMLConfig">
+<Table schema="" name="ftp_file_download_his"/>
+<ColumnConfig name="file_path_uuid" isKey="false" skipUnmodified="false">
+<Parameter>
+<Attributes name="file_path_uuid"/>
+<O>
+<![CDATA[]]></O>
+</Parameter>
+</ColumnConfig>
+<ColumnConfig name="file_name" isKey="false" skipUnmodified="false">
+<ColumnRow column="17" row="1"/>
+</ColumnConfig>
+<ColumnConfig name="download_type" isKey="false" skipUnmodified="false">
+<ColumnRow column="16" row="1"/>
+</ColumnConfig>
+<ColumnConfig name="operator_oa" isKey="false" skipUnmodified="false">
+<O t="XMLable" class="com.fr.base.Formula">
+<Attributes>
+<![CDATA[=$fine_username]]></Attributes>
+</O>
+</ColumnConfig>
+<Condition class="com.fr.data.condition.FormulaCondition">
+<Formula>
+<![CDATA[Q2 = '1']]></Formula>
+</Condition>
+</DMLConfig>
+</SubmitVisitor>
+<SubmitVisitor class="com.fr.report.write.WClassSubmiter">
+<Name>
+<![CDATA[文件上传至服务器]]></Name>
+<SubmitTask class="com.fr.plugin.file.load.delight.task.FileLoadDelightSubmitTask" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<XMLable class="com.fr.plugin.file.load.delight.config.FileLoadDelightSubmitTargetConfig" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<FileLoadDelightUploadFileConfig connectionType="SERVER_REMOTE" connectionName="sftp_connect" sameNameCover="true" exportFileSaveServer="true"/>
+<FileLoadDelightSubmitTarget class="com.fr.plugin.file.load.delight.config.FileLoadDelightSubmitTarget" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<serverType>
+<![CDATA[SERVER_REMOTE]]></serverType>
+<server>
+<![CDATA[sftp_connect]]></server>
+<directory class="com.fr.plugin.file.load.delight.config.FileLoadDelightVariableValue" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<Attr type="1" value="CONCATENATE($file_upload_dir_new, &quot;/&quot;, $busi_path, &quot;/&quot;, $file_path_uuid, &quot;/&quot;)"/>
+</directory>
+<name class="com.fr.plugin.file.load.delight.config.FileLoadDelightVariableValue" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<Attr type="0" value=""/>
+</name>
+<file class="com.fr.plugin.file.load.delight.config.FileLoadDelightVariableValue" pluginID="com.fr.plugin.file.load.delight" plugin-version="19.0.29">
+<Attr type="1" value="K6"/>
+</file>
+</FileLoadDelightSubmitTarget>
+</XMLable>
+</SubmitTask>
+</SubmitVisitor>
+<TopVerifier class="com.fr.report.write.ValueVerifier">
+<name>
+<![CDATA[非空校验]]></name>
+</TopVerifier>
+</ReportWriteAttr>
+<PrivilegeControl/>
+</Report>
+<ReportParameterAttr>
+<Attributes showWindow="true" delayPlaying="false" windowPosition="1" align="0" useParamsTemplate="false" currentIndex="4"/>
+<PWTitle>
+<![CDATA[参数]]></PWTitle>
+<ParameterUI class="com.fr.form.main.parameter.FormParameterUI">
+<Parameters/>
+<Layout class="com.fr.form.ui.container.WParameterLayout">
+<Listener event="afterinit" name="初始化后1">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[setTimeout(() => {
+//	myFR.hideParameter();
+}, 0);]]></Content>
+</JavaScript>
+</Listener>
+<WidgetName name="para"/>
+<WidgetAttr aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<FollowingTheme borderStyle="false"/>
+<Margin top="0" left="0" bottom="0" right="0"/>
+<Border>
+<border style="0" borderRadius="0" type="0" borderStyle="0">
+<color>
+<FineColor color="-723724" hor="-1" ver="-1"/>
+</color>
+</border>
+<WidgetTitle>
+<O>
+<![CDATA[新建标题]]></O>
+<FRFont name="SimSun" style="0" size="72"/>
+<Position pos="0"/>
+</WidgetTitle>
+<Alpha alpha="1.0"/>
+</Border>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-526086" hor="-1" ver="-1"/>
+</color>
+</Background>
+<LCAttr vgap="0" hgap="0" compInterval="0"/>
+<Widget class="com.fr.form.ui.container.WAbsoluteLayout$BoundsWidget">
+<InnerWidget class="com.fr.form.parameter.FormSubmitButton">
+<WidgetName name="formSubmit0"/>
+<WidgetID widgetID="0ccd3ea4-b9c6-4772-beb9-049ad4b49da8"/>
+<WidgetAttr aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<Text>
+<![CDATA[查询]]></Text>
+<Hotkeys>
+<![CDATA[enter]]></Hotkeys>
+</InnerWidget>
+<BoundsAttr x="598" y="30" width="80" height="21"/>
+</Widget>
+<Widget class="com.fr.form.ui.container.WAbsoluteLayout$BoundsWidget">
+<InnerWidget class="com.fr.form.ui.TextEditor">
+<WidgetName name="file_path_uuid"/>
+<LabelName name="file_path_uuid刷新页面使用"/>
+<WidgetID widgetID="b9892df8-922b-4aa0-98c3-52de5fc33657"/>
+<WidgetAttr aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<TextAttr/>
+<Reg class="com.fr.form.ui.reg.NoneReg"/>
+<widgetValue>
+<O>
+<![CDATA[]]></O>
+</widgetValue>
+<MobileScanCodeAttr scanCode="true" textInputMode="0" isSupportManual="true" isSupportScan="true" isSupportNFC="false" nfcContentType="0"/>
+<MobileTextEditAttr allowOneClickClear="true"/>
+</InnerWidget>
+<BoundsAttr x="209" y="30" width="351" height="21"/>
+</Widget>
+<Widget class="com.fr.form.ui.container.WAbsoluteLayout$BoundsWidget">
+<InnerWidget class="com.fr.form.ui.Label">
+<WidgetName name="label0"/>
+<WidgetID widgetID="7ae08edf-07ab-498e-9f92-3fa92139cc49"/>
+<WidgetAttr invisible="true" aspectRatioLocked="false" aspectRatioBackup="-1.0" description="">
+<MobileBookMark useBookMark="false" bookMarkName="" frozen="false" index="-1" oldWidgetName=""/>
+<PrivilegeControl/>
+</WidgetAttr>
+<widgetValue>
+<O>
+<![CDATA[file_path_uuid刷新页面用]]></O>
+</widgetValue>
+<LabelAttr verticalcenter="true" textalign="0" autoline="true"/>
+<FRFont name="SimSun" style="0" size="72"/>
+<border style="0">
+<color>
+<FineColor color="-723724" hor="-1" ver="-1"/>
+</color>
+</border>
+</InnerWidget>
+<BoundsAttr x="50" y="30" width="159" height="21"/>
+</Widget>
+<ShowBookmarks showBookmarks="false"/>
+<Sorted sorted="false"/>
+<MobileWidgetList>
+<Widget widgetName="file_path_uuid"/>
+<Widget widgetName="formSubmit0"/>
+</MobileWidgetList>
+<FrozenWidgets/>
+<MobileBookMarkStyle class="com.fr.form.ui.mobile.impl.DefaultMobileBookMarkStyle"/>
+<Display display="true"/>
+<DelayDisplayContent delay="false"/>
+<UseParamsTemplate use="false"/>
+<paramFireStopEdit fireEvent="false"/>
+<Position position="0"/>
+<Design_Width design_width="960"/>
+<NameTagModified/>
+<WidgetNameTagMap/>
+<ParamAttr class="com.fr.report.mobile.DefaultMobileParamStyle"/>
+<ParamStyle class="com.fr.form.ui.mobile.impl.DefaultMobileParameterStyle"/>
+<FollowingTheme background="false"/>
+</Layout>
+<DesignAttr width="960" height="80"/>
+</ParameterUI>
+<Parameter>
+<Attributes name="busi_path"/>
+<O>
+<![CDATA[temp]]></O>
+</Parameter>
+</ReportParameterAttr>
+<StyleList>
+<Style horizontal_alignment="0" imageLayout="1">
+<FRFont name="SimSun" style="0" size="72"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Background>
+<Border/>
+</Style>
+<Style horizontal_alignment="0" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="96"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+<Style horizontal_alignment="0" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="96"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Left style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Left>
+<Right style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Right>
+</Border>
+</Style>
+<Style horizontal_alignment="0" textStyle="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Left style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Left>
+<Right style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Right>
+</Border>
+</Style>
+<Style horizontal_alignment="2" textStyle="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Left style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Left>
+</Border>
+</Style>
+<Style horizontal_alignment="2" textStyle="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Right style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Right>
+</Border>
+</Style>
+<Style horizontal_alignment="0" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Left style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Left>
+</Border>
+</Style>
+<Style imageLayout="4">
+<FRFont name="SimSun" style="0" size="72"/>
+<Background name="NullBackground"/>
+<Border>
+<Top style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Top>
+<Bottom style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Bottom>
+<Right style="1">
+<color>
+<FineColor color="-4144960" hor="-1" ver="-1"/>
+</color>
+</Right>
+</Border>
+</Style>
+<Style horizontal_alignment="0" textStyle="1" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+<Style horizontal_alignment="4" imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+<Style imageLayout="4">
+<FRFont name="SimSun" style="0" size="72"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+<Style imageLayout="1">
+<FRFont name="微软雅黑" style="0" size="80"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+</StyleList>
+<DesensitizationList/>
+<DesignerVersion DesignerVersion="LAA"/>
+<PreviewType PreviewType="1"/>
+<TemplateThemeAttrMark class="com.fr.base.iofile.attr.TemplateThemeAttrMark">
+<TemplateThemeAttrMark name="兼容主题" dark="false"/>
+</TemplateThemeAttrMark>
+<StrategyConfigsAttr class="com.fr.esd.core.strategy.persistence.StrategyConfigsAttr">
+<StrategyConfigs/>
+</StrategyConfigsAttr>
+<ForkIdAttrMark class="com.fr.base.iofile.attr.ForkIdAttrMark">
+<ForkIdAttrMark forkId="283b7e0f-dbb1-4e46-862a-324242aaa7f9"/>
+</ForkIdAttrMark>
+<TemplateCloudInfoAttrMark class="com.fr.plugin.cloud.analytics.attr.TemplateInfoAttrMark" pluginID="com.fr.plugin.cloud.analytics.v11" plugin-version="3.37.19">
+<TemplateCloudInfoAttrMark createTime="1678689478994"/>
+</TemplateCloudInfoAttrMark>
+<TemplateIdAttMark class="com.fr.base.iofile.attr.TemplateIdAttrMark">
+<TemplateIdAttMark TemplateId="283b7e0f-dbb1-4e46-862a-324242aaa7f9"/>
+</TemplateIdAttMark>
+</WorkBook>

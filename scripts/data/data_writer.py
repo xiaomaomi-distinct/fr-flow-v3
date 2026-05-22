@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 
 from lxml import etree
@@ -59,34 +60,6 @@ def _warn(msg: str):
 
 
 # ══════════════════════════════════════════════════════════════
-# 常量
-# ══════════════════════════════════════════════════════════════
-
-# XML 命名空间（帆软 CPT 通常无命名空间，留空）
-_NS = ""
-
-# TableData 固定结构模板
-_TABLE_DATA_TEMPLATE = """<TableData name="{name}" class="com.fr.data.impl.DBTableData">
-<Desensitizations desensitizeOpen="false"/>
-<Parameters>
-{parameters}
-</Parameters>
-<Attributes maxMemRowCount="-1"/>
-<Connection class="com.fr.data.impl.NameDatabaseConnection">
-<DatabaseName><![CDATA[{db_name}]]></DatabaseName>
-</Connection>
-<Query><![CDATA[{sql}]]></Query>
-<PageQuery><![CDATA[]]></PageQuery>
-</TableData>"""
-
-# Parameter 结构模板
-_PARAM_TEMPLATE = """<Parameter>
-<Attributes name="{name}"/>
-<O{t_attr}><![CDATA[{default}]]></O>
-</Parameter>"""
-
-
-# ══════════════════════════════════════════════════════════════
 # 参数类型映射
 # ══════════════════════════════════════════════════════════════
 
@@ -107,53 +80,74 @@ def param_type_to_xml(param_type: str) -> tuple[str, str]:
 
 
 # ══════════════════════════════════════════════════════════════
-# TableData 生成
+# TableData 生成（基于 lxml Element + CDATA，根除序列化丢失 CDATA 问题）
 # ══════════════════════════════════════════════════════════════
 
-def build_parameters(params: list) -> str:
-    """
-    从参数列表构建 Parameters XML
+def _cdata(text: str) -> etree.CDATA:
+    """CDATA 文本节点工厂"""
+    return etree.CDATA(text)
 
-    params 格式:
-    [
-      {"name": "p_page", "type": "integer", "default": "1"},
-      {"name": "p_keyword", "type": "string", "default": ""},
-      ...
-    ]
-    """
-    parts = []
+
+def _parse_t_attr(t_attr: str) -> dict:
+    """将 ' t="I"' 或 ' t="XMLable" class="com.fr.base.Formula"' 解析为 dict"""
+    attrs = {}
+    for part in t_attr.strip().split():
+        if '=' in part:
+            k, v = part.split('=', 1)
+            attrs[k] = v.strip('"')
+    return attrs
+
+
+def build_table_data(name: str, sql: str, params: list,
+                     db_name: str = "common_db") -> etree.Element:
+    """生成完整 TableData Element（CDATA 安全）"""
+    td = etree.Element("TableData", attrib={
+        "name": name,
+        "class": "com.fr.data.impl.DBTableData",
+    })
+
+    # Desensitizations
+    desens = etree.SubElement(td, "Desensitizations")
+    desens.set("desensitizeOpen", "false")
+
+    # Parameters
+    params_elem = etree.SubElement(td, "Parameters")
     for p in params:
         ptype = p.get("type", "string")
         default = p.get("default", "")
         t_attr, fallback = param_type_to_xml(ptype)
-
         if not default and fallback:
             default = fallback
 
-        param_xml = _PARAM_TEMPLATE.format(
-            name=p["name"],
-            t_attr=t_attr,
-            default=default,
-        )
-        parts.append(param_xml)
+        param_elem = etree.SubElement(params_elem, "Parameter")
+        attr_elem = etree.SubElement(param_elem, "Attributes")
+        attr_elem.set("name", p["name"])
 
-    return "\n".join(parts)
+        o_elem = etree.SubElement(param_elem, "O")
+        for k, v in _parse_t_attr(t_attr).items():
+            o_elem.set(k, v)
+        o_elem.text = _cdata(default)
 
+    # Attributes
+    attrs = etree.SubElement(td, "Attributes")
+    attrs.set("maxMemRowCount", "-1")
 
-def build_table_data(name: str, sql: str, params: list,
-                     db_name: str = "common_db") -> str:
-    """
-    生成完整 TableData XML
-    """
-    params_xml = build_parameters(params)
+    # Connection
+    conn = etree.SubElement(td, "Connection", attrib={
+        "class": "com.fr.data.impl.NameDatabaseConnection",
+    })
+    dbname = etree.SubElement(conn, "DatabaseName")
+    dbname.text = _cdata(db_name)
 
-    table_data = _TABLE_DATA_TEMPLATE.format(
-        name=name,
-        parameters=params_xml,
-        db_name=db_name,
-        sql=sql.strip(),
-    )
-    return table_data
+    # Query
+    query = etree.SubElement(td, "Query")
+    query.text = _cdata(sql.strip())
+
+    # PageQuery
+    pagequery = etree.SubElement(td, "PageQuery")
+    pagequery.text = _cdata("")
+
+    return td
 
 
 # ══════════════════════════════════════════════════════════════
@@ -219,16 +213,14 @@ def write(output_path: str, task_path: str, *,
 
         _info(f"生成数据集：{name}")
 
-        # 生成 TableData XML
-        table_data_xml = build_table_data(
+        # 生成 TableData Element（优先用数据集自身的 db_connection，否则用 CLI --db-name）
+        ds_elem = build_table_data(
             name=name,
             sql=sql,
             params=params,
-            db_name=db_name,
+            db_name=ds.get("db_connection", db_name),
         )
 
-        # 解析为 Element 并追加
-        ds_elem = etree.fromstring(table_data_xml)
         table_data_map.append(ds_elem)
         _ok(f"已添加：{name}")
 

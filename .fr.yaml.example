@@ -1,0 +1,38 @@
+# =============================================================================
+# fr-flow-v3 用户配置文件模板
+# =============================================================================
+# 使用方法:
+#   1. 复制此文件为 .fr.yaml:  cp .fr.yaml.example .fr.yaml
+#   2. 将下方所有 "改为你的..." 占位符替换为实际值
+#   3. 运行 sync_env.sh 自动生成 settings.json 的 env 块
+#       bash scripts/sync_env.sh
+#   4. 将输出的 env 块合并到 .claude/settings.json
+#   5. 在 settings.json 中配置 PreToolUse Hook（详见 docs/INSTALL.md）
+# =============================================================================
+
+paths:
+  # 项目工作目录（存放代码、文档、SQL 等中间产物）
+  projects_dir: /home/user/fr-antd-project                      # ← 改为你的项目目录
+
+  # 帆软报表部署目录（CPT 文件最终落盘位置）
+  # 即 FineReport 设计器下的 WEB-INF/reportlets 目录
+  finereport_reportlets: /home/user/FineReport_designer/webapps/webroot/WEB-INF/reportlets  # ← 改为你的帆软目录
+
+finereport:
+  # 帆软服务地址（设计器内置 Tomcat）
+  server_url: http://localhost:18080/                           # ← 改为实际端口
+
+  # 报表预览路径前缀
+  preview_path: /webroot/decision/view/report?op=write&reportlet=
+
+  # 帆软管理员账号
+  admin_user: admin                                             # ← 改为实际管理员账号
+  admin_pwd: admin                                              # ← 改为实际管理员密码
+
+mysql:
+  # 数据库连接信息
+  host: localhost                                               # ← 改为 MySQL 主机
+  port: 3306                                                    # ← 改为 MySQL 端口
+  database: common_db                                           # ← 改为数据库名
+  user: root                                                    # ← 改为数据库用户
+  password: root                                                # ← 改为数据库密码

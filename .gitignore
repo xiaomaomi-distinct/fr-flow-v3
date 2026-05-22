@@ -1,10 +1,36 @@
+# 用户配置（含密码，不提交）
 .fr.yaml
-playwright-mcp/
-.playwright-mcp/
+
+# Python 缓存
+__pycache__/
+*.pyc
+
+# Node 依赖（用户本地安装）
+foundation/tools/api_tester/node_modules/
+node_modules/
+
+# 构建产物（esbuild 中间输出）
+*.mjs
+
+# 自动生成文件（由 sync_env.sh 本地生成）
+shared/PATHS.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 播放器/浏览器截图
 *.png
 *.jpg
 *.tar.gz
-node_modules/
-__pycache__/
-*.pyc
-.DS_Store
+
+# 播放器 MCP
+playwright-mcp/
+.playwright-mcp/
+
+# 测试输出
+test-results/

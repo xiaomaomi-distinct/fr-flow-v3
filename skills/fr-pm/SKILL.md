@@ -169,9 +169,23 @@ EOF
 
 ---
 
+## 场景路由
+
+识别到以下需求时，直接引用已有公共组件，无需重复设计数据层和前端页面。详见 `shared/KNOWLEDGE/ASSETS.md`。
+
+| 场景 | 组件 | 集成方式 |
+|------|------|----------|
+| 文件上传 / 附件管理 | `sftp_file_overlay` | Modal + iframe 加载 overlay CPT，传入 file_path_uuid + busi_path。业务侧只需生成 UUID。 |
+| 调用外部 HTTP 接口 | `api_agent` | 通过 `/api/report` 代理调用，不在 CPT 中硬编码 URL |
+| API 响应结果展示 | `api_rs` | iframe 加载，展示 loading + 结果 + 倒计时关闭 |
+
+**路由规则**: 命中上述场景时，PM 在 dev_task.json 中直接引用公共组件路径，data-dev 和 display-dev 跳过该模块的独立开发。
+
+---
+
 ## PM 三问决策
 
-需求确认后，回答以下三个问题，决定后端类型和开发路径。
+需求确认后（且经过场景路由排除已有组件后），回答以下三个问题，决定后端类型和开发路径。
 
 > **为什么要先回答这三个问题？** 这三个答案决定了后续所有设计——数据层要不要建、展示层怎么调接口、工具链走哪条路径。答错一个，下游全偏。
 
@@ -411,7 +425,17 @@ WHERE 1=1
 }
 ```
 
-**页面类型**：`list`（列表页）、`form`（表单页）、`selector`（选择器）、`batch`（批量导入）
+**页面类型**（决定 display-dev 使用的脚手架）：
+
+| type | 说明 | 容器 | 标准布局 |
+|------|------|------|----------|
+| `list` | 列表页（挂菜单入口） | 独立页面 | 搜索栏左 + 新增按钮右 → Table → 分页 |
+| `form` | 表单页（新增/编辑弹窗） | Modal | Form vertical，取消(左)+保存(右) |
+| `detail` | 详情页（只读查看） | 独立页面 | Descriptions bordered，顶部返回+底部操作 |
+| `batch` | 批量导入页 | 独立页面 | 4步向导：选择→预览→写入校验→结果 |
+| `selector` | 选择器弹窗 | Modal | 搜索+Table(rowSelection)+底部固定栏+确定 |
+
+> `type` 在 schema 中为自由字符串（非枚举）。新类型不阻塞流水线，display-dev 回退到通用 `starter.jsx`。
 
 **页面联动关系**写入 `navigation` 字段：
 ```json

@@ -281,51 +281,72 @@ cp "$FR_PROJECTS_DIR/{project}/data/{module}_data.cpt" \
 
 **这是数据层开发的强制环节。** 每个 dataset 都必须通过 api_tester 验证。
 
-**验证工具**：技能包内置 `api_verify.spec.js` 脚本，基于 Playwright 自动化。
+**验证工具**：技能包内置 `api_verify.spec.js`，基于 Playwright 自动化。依赖已通过 `package.json` 管理。
+
+#### 一次性环境准备（首次使用技能包时执行）
+
+```bash
+cd "$FR_WORKSPACE/foundation/tools/api_tester"
+npm install                    # 安装 playwright（JS 库）
+npx playwright install chromium  # 下载浏览器二进制（约 300MB）
+```
 
 #### 使用步骤
 
 ```bash
-# 1. 复制验证脚本到项目
-cp "$FR_WORKSPACE/foundation/tools/api_tester/api_verify.spec.js" \
-   "$FR_PROJECTS_DIR/{project}/test/"
+# 从 api_tester 目录直接执行，--task 自动提取全部数据集
+cd "$FR_WORKSPACE/foundation/tools/api_tester"
 
-# 2. 编辑 CONFIG 对象，填入：
-#    - dataCptPath: "{project}/data/{module}_data.cpt"
-#    - datasets[]: 从 dev_task.json 提取全部 dataset
+node api_verify.spec.js \
+  --cpt "{project}/data/{module}_data.cpt" \
+  --task "$FR_PROJECTS_DIR/{project}/docs/dev_task.json"
+```
 
-# 3. 运行
-node "$FR_PROJECTS_DIR/{project}/test/api_verify.spec.js"
+也支持手动指定数据集（调试用）：
+
+```bash
+node api_verify.spec.js \
+  --cpt "fr_dev_demo/data/demo_data.cpt" \
+  --dataset '{"name":"book_qry","type":"list","params":[{"name":"p_page","value":"1","type":"String"},{"name":"p_pagesize","value":"5","type":"String"}]}'
 ```
 
 **脚本自动完成**：
-1. 打开 api_tester → 填写 CPT 路径 + 数据集名称
-2. 清除默认分页参数（`p_page`/`p_pagesize`）→ 按 dataset.params 逐条添加
-3. 发送请求 → 检查 `err_code === 0` → 汇总 ✅/❌
-4. 任何一条失败，exit code 非 0
+1. 从 `--task` 提取全部数据集定义（无需手动编辑 CONFIG）
+2. 打开 api_tester → 填写 CPT 路径 + 数据集名称
+3. 清除默认分页参数 → 按 dataset.params 逐条添加
+4. 发送请求 → 检查 `err_code === 0` → 汇总 ✅/❌
+5. 任何一条失败，exit code 非 0
 
 **运行示例**：
 ```
+  ℹ 从 task 提取了 7 个数据集
+
 🔬 API 数据层验证
-   CPT: employee/data/employee_data.cpt
-   待验证: 4 个数据集
+   CPT: fr_dev_demo/data/demo_data.cpt
+   待验证: 7 个数据集
 
-── employee_qry (list)
-  ✅ err_code=0, 15 条 (49ms)
-── employee_total (stat)
-  ✅ err_code=0, 1 条 (29ms)
-── dict_dept (dict)
-  ✅ err_code=0, 3 条 (22ms)
-── employee_by_id (detail)
+── book_qry (list)
+  ✅ err_code=0, 10 条 (51ms)
+── book_total (stat)
+  ✅ err_code=0, 1 条 (22ms)
+── book_by_id (detail)
   ✅ err_code=0, 1 条 (18ms)
+── dict_category (dict)
+  ✅ err_code=0, 4 条 (24ms)
+── book_insert (insert)
+  ✅ err_code=0, 1 条 (46ms)
+── book_update (update)
+  ✅ err_code=0, 1 条 (38ms)
+── book_delete (delete)
+  ✅ err_code=0, 1 条 (30ms)
 
 ══════════════════════════════════
-  总计 4  |  ✅ 4  |  ❌ 0
-══════════════════════════════════
+  总计 7  |  ✅ 7  |  ❌ 0
 ```
+
+> **注意**：不要在项目目录下复制脚本执行。`require('playwright')` 的模块解析从脚本所在目录开始，复制会断开与 `node_modules` 的路径关系。
 
 > **api_tester 可修改**：如果 api_tester 页面需要调整，编辑 `$FR_WORKSPACE/foundation/tools/api_tester/api_tester.jsx`，走 display_writer.py 重新发布。不要手动改 CPT。
-```
 
 **验证清单**（逐条打勾）：
 
@@ -393,4 +414,5 @@ Skill({ skill: "fr-display-dev", args: "--project {project}" })
 | 文件 | 何时读 | 内容 |
 |------|--------|------|
 | `shared/KNOWLEDGE/ARCHITECTURE.md` | 开工必读 | `/api/data` 格式、CPT 结构、参数绑定 |
+| `shared/KNOWLEDGE/ASSETS.md` | 场景路由时 | 公共组件清单，附件场景只需部署 SP，API 代理场景配置 api_agent |
 | `shared/KNOWLEDGE/FINEREPORT_ENV.md` | 环境异常时 | 帆软环境故障排查 |
