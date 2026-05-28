@@ -36,21 +36,77 @@
   var appRoot = document.createElement("div");
   appRoot.id = "app-root";
   document.body.insertBefore(appRoot, document.body.firstChild);
-  var { Input, Button, Select, Space, Tag, Card, Divider } = antd;
+  var { Input, Button, Select, Space, Tag, Card, Divider, Collapse, message } = antd;
   function App() {
-    var _hook_001_ = React.useState("data");var apiType = _hook_001_[0];var setApiType = _hook_001_[1];
-    var _hook_002_ = React.useState("");var reportPath = _hook_002_[0];var setReportPath = _hook_002_[1];
-    var _hook_003_ = React.useState("");var dataName = _hook_003_[0];var setDataName = _hook_003_[1];
-    var _hook_004_ = React.useState("");var pUrl = _hook_004_[0];var setPUrl = _hook_004_[1];
-    var _hook_005_ = React.useState("{}");var pBody = _hook_005_[0];var setPBody = _hook_005_[1];
-    var _hook_006_ = React.useState([
+    var [apiType, setApiType] = React.useState("data");
+    var [reportPath, setReportPath] = React.useState("");
+    var [dataName, setDataName] = React.useState("");
+    var [pUrl, setPUrl] = React.useState("");
+    var [pBody, setPBody] = React.useState("{}");
+    var [params, setParams] = React.useState([
       { name: "p_page", value: "1", type: "String" },
       { name: "p_pagesize", value: "10", type: "String" }
-    ]);var params = _hook_006_[0];var setParams = _hook_006_[1];
-    var _hook_007_ = React.useState(false);var loading = _hook_007_[0];var setLoading = _hook_007_[1];
-    var _hook_008_ = React.useState(null);var result = _hook_008_[0];var setResult = _hook_008_[1];
-    var _hook_009_ = React.useState(null);var error = _hook_009_[0];var setError = _hook_009_[1];
-    var _hook_010_ = React.useState(null);var requestTime = _hook_010_[0];var setRequestTime = _hook_010_[1];
+    ]);
+    var [loading, setLoading] = React.useState(false);
+    var [result, setResult] = React.useState(null);
+    var [error, setError] = React.useState(null);
+    var [requestTime, setRequestTime] = React.useState(null);
+    var [taskJson, setTaskJson] = React.useState("");
+    var [datasets, setDatasets] = React.useState([]);
+    var [selectedDs, setSelectedDs] = React.useState(void 0);
+    var [taskLoaded, setTaskLoaded] = React.useState(false);
+    var [taskError, setTaskError] = React.useState("");
+    function handleLoadTask() {
+      setTaskError("");
+      if (!taskJson.trim()) {
+        setTaskError("请粘贴 dev_task.json 内容");
+        return;
+      }
+      var task;
+      try {
+        task = JSON.parse(taskJson);
+      } catch (e) {
+        setTaskError("JSON 解析失败: " + e.message);
+        return;
+      }
+      var dsList = task.database && task.database.datasets || task.datasets || [];
+      if (dsList.length === 0) {
+        setTaskError("未找到 datasets 数组（检查 JSON 结构是否为 dev_task.json）");
+        return;
+      }
+      setDatasets(dsList);
+      setTaskLoaded(true);
+      message.success("已加载 " + dsList.length + " 个数据集");
+      if (task.data_cpt && !reportPath) {
+        var cptPath = task.data_cpt;
+        if (task.project) {
+          cptPath = task.project + "/" + cptPath;
+        }
+        setReportPath(cptPath);
+      }
+    }
+    function handleSelectDataset(name) {
+      setSelectedDs(name);
+      var ds = datasets.find(function(d) {
+        return d.name === name;
+      });
+      if (!ds) return;
+      setDataName(ds.name);
+      var filledParams = (ds.params || []).map(function(p) {
+        var v = p.default || "";
+        if (!v && v !== "0") {
+          if (p.name.toLowerCase().indexOf("json") >= 0) v = "[]";
+          else if (p.type === "Integer" || p.type === "integer") v = "1";
+          else if (p.type === "Double" || p.type === "double") v = "0.00";
+          else v = "test_" + p.name;
+        }
+        return { name: p.name, value: v, type: p.type || "String" };
+      });
+      setParams(filledParams);
+      setResult(null);
+      setError(null);
+      setRequestTime(null);
+    }
     function handleApiTypeChange(type) {
       setApiType(type);
       setResult(null);
@@ -58,7 +114,7 @@
       setRequestTime(null);
     }
     function addParam() {
-      setParams([...params, { name: "", value: "", type: "String" }]);
+      setParams(params.concat([{ name: "", value: "", type: "String" }]));
     }
     function removeParam(index) {
       setParams(params.filter(function(_, i) {
@@ -66,7 +122,7 @@
       }));
     }
     function updateParam(index, field, value) {
-      var newParams = [...params];
+      var newParams = params.slice();
       newParams[index][field] = value;
       setParams(newParams);
     }
@@ -150,7 +206,7 @@
               if (parsed.error) return "代理层错误: " + parsed.error;
               if (parsed.success === false) return "业务层错误: " + (parsed.message || JSON.stringify(parsed));
             } catch (e) {
-              if (a1.toLowerCase().includes("error")) return "代理层错误: " + a1;
+              if (a1.toLowerCase().indexOf("error") >= 0) return "代理层错误: " + a1;
             }
           }
         }
@@ -158,7 +214,73 @@
       return null;
     }
     var errMsg = result ? getErrorMessage(result) : null;
-    return  React.createElement("div", { style: { padding: "24px", maxWidth: "960px", margin: "0 auto" } },  React.createElement("div", { style: { marginBottom: "24px" } },  React.createElement("h1", { style: { fontSize: "24px", fontWeight: 600, marginBottom: "4px" } }, "API Tester"),  React.createElement("p", { style: { color: "#666", fontSize: "14px", margin: 0 } }, "数据层接口测试工具 — 验证 /api/data 和 /api/report")),  React.createElement(Card, { style: { marginBottom: "24px" } },  React.createElement(Space, { style: { marginBottom: "24px" } },  React.createElement(
+    var dsOptions = datasets.map(function(ds) {
+      return { value: ds.name, label: ds.name + " (" + (ds.type || "?") + ")" };
+    });
+    return  React.createElement("div", { style: { padding: "24px", maxWidth: "960px", margin: "0 auto" } },  React.createElement("div", { style: { marginBottom: "24px" } },  React.createElement("h1", { style: { fontSize: "24px", fontWeight: 600, marginBottom: "4px" } }, "API Tester"),  React.createElement("p", { style: { color: "#666", fontSize: "14px", margin: 0 } }, "数据层接口测试工具 — 验证 /api/data 和 /api/report")),  React.createElement(Card, { size: "small", style: { marginBottom: "16px", background: "#f6f8fa" } },  React.createElement(Collapse, { ghost: true, items: [{
+      key: "task",
+      label: React.createElement(
+        "span",
+        { style: { fontWeight: 500, fontSize: 14 } },
+        "📋 从 dev_task.json 加载" + (taskLoaded ? " （已加载 " + datasets.length + " 个数据集）" : "")
+      ),
+      children: React.createElement(
+        "div",
+        null,
+        React.createElement(
+          "p",
+          { style: { color: "#666", fontSize: 12, marginTop: 0, marginBottom: 8 } },
+          "粘贴 dev_task.json 完整内容，点击加载后可通过下拉菜单一键选择数据集，自动填入所有参数"
+        ),
+        React.createElement(Input.TextArea, {
+          rows: 4,
+          placeholder: "粘贴 dev_task.json 内容...",
+          value: taskJson,
+          onChange: function(e) {
+            setTaskJson(e.target.value);
+          },
+          style: { fontFamily: "monospace", fontSize: 11, marginBottom: 8 }
+        }),
+        taskError && React.createElement("div", {
+          style: { color: "#ff4d4f", fontSize: 12, marginBottom: 8 }
+        }, taskError),
+        React.createElement(
+          "div",
+          { style: { display: "flex", gap: 8 } },
+          React.createElement(Button, {
+            type: "primary",
+            size: "small",
+            onClick: handleLoadTask
+          }, "加载"),
+          taskLoaded && React.createElement(Button, {
+            size: "small",
+            onClick: function() {
+              setTaskJson("");
+              setDatasets([]);
+              setSelectedDs(void 0);
+              setTaskLoaded(false);
+              setTaskError("");
+            }
+          }, "清除")
+        ),
+        taskLoaded && React.createElement(
+          "div",
+          { style: { marginTop: 12 } },
+          React.createElement("div", { style: { fontSize: 12, color: "#666", marginBottom: 4 } }, "选择数据集："),
+          React.createElement(Select, {
+            placeholder: "选择数据集自动填入参数",
+            style: { width: "100%" },
+            showSearch: true,
+            value: selectedDs,
+            onChange: handleSelectDataset,
+            options: dsOptions,
+            filterOption: function(input, option) {
+              return (option.label || "").toLowerCase().indexOf(input.toLowerCase()) >= 0;
+            }
+          })
+        )
+      )
+    }] })),  React.createElement(Card, { style: { marginBottom: "24px" } },  React.createElement(Space, { style: { marginBottom: "24px" } },  React.createElement(
       Button,
       {
         type: apiType === "data" ? "primary" : "default",
@@ -305,7 +427,7 @@
       } }, formatJson(result))
     ));
   }
-  ReactDOM.createRoot(document.getElementById("app-root")).render( React.createElement(App, null));
+  ReactDOM.createRoot(document.getElementById("app-root")).render(React.createElement(App));
 })();
 
 ]]></Content>

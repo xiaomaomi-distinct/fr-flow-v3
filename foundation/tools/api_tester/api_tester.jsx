@@ -1,13 +1,9 @@
 /*
   API Tester - 数据层接口测试工具
 
-  用法：
-    1. display_writer.py --jsx api_tester.jsx --output api_tester.cpt
-    2. 部署到 $FR_REPORTLETS/api/
-    3. 浏览器访问验证数据层接口
-
   功能：
-    - 测试 /api/data 和 /api/report 所有接口
+    - 加载 dev_task.json 一键填充数据集（粘贴 JSON → 下拉选择 → 自动填入所有字段）
+    - 手动测试 /api/data 和 /api/report
     - 动态参数输入（name / value / type）
     - 格式化 JSON 返回 + 三层错误检测
 */
@@ -46,22 +42,74 @@ document.body.insertBefore(appRoot, document.body.firstChild);
 
 /* ===== DEVELOPER ZONE ===== */
 
-const { Input, Button, Select, Space, Tag, Card, Divider } = antd;
+var { Input, Button, Select, Space, Tag, Card, Divider, Collapse, message } = antd;
 
 function App() {
-    const [apiType, setApiType] = React.useState('data');
-    const [reportPath, setReportPath] = React.useState('');
-    const [dataName, setDataName] = React.useState('');
-    const [pUrl, setPUrl] = React.useState('');
-    const [pBody, setPBody] = React.useState('{}');
-    const [params, setParams] = React.useState([
+    var [apiType, setApiType] = React.useState('data');
+    var [reportPath, setReportPath] = React.useState('');
+    var [dataName, setDataName] = React.useState('');
+    var [pUrl, setPUrl] = React.useState('');
+    var [pBody, setPBody] = React.useState('{}');
+    var [params, setParams] = React.useState([
         { name: 'p_page', value: '1', type: 'String' },
         { name: 'p_pagesize', value: '10', type: 'String' }
     ]);
-    const [loading, setLoading] = React.useState(false);
-    const [result, setResult] = React.useState(null);
-    const [error, setError] = React.useState(null);
-    const [requestTime, setRequestTime] = React.useState(null);
+    var [loading, setLoading] = React.useState(false);
+    var [result, setResult] = React.useState(null);
+    var [error, setError] = React.useState(null);
+    var [requestTime, setRequestTime] = React.useState(null);
+
+    // ── 加载 dev_task.json ───────────────────────────────────
+    var [taskJson, setTaskJson] = React.useState('');
+    var [datasets, setDatasets] = React.useState([]);
+    var [selectedDs, setSelectedDs] = React.useState(undefined);
+    var [taskLoaded, setTaskLoaded] = React.useState(false);
+    var [taskError, setTaskError] = React.useState('');
+
+    function handleLoadTask() {
+        setTaskError('');
+        if (!taskJson.trim()) { setTaskError('请粘贴 dev_task.json 内容'); return; }
+        var task;
+        try { task = JSON.parse(taskJson); }
+        catch (e) { setTaskError('JSON 解析失败: ' + e.message); return; }
+        var dsList = (task.database && task.database.datasets) || task.datasets || [];
+        if (dsList.length === 0) { setTaskError('未找到 datasets 数组（检查 JSON 结构是否为 dev_task.json）'); return; }
+        setDatasets(dsList);
+        setTaskLoaded(true);
+        message.success('已加载 ' + dsList.length + ' 个数据集');
+        // 自动填入 CPT 路径
+        if (task.data_cpt && !reportPath) {
+            // data_cpt 如 "data/exam_mgmt_data.cpt" → 前面拼 project
+            var cptPath = task.data_cpt;
+            if (task.project) {
+                cptPath = task.project + '/' + cptPath;
+            }
+            setReportPath(cptPath);
+        }
+    }
+
+    function handleSelectDataset(name) {
+        setSelectedDs(name);
+        var ds = datasets.find(function(d) { return d.name === name; });
+        if (!ds) return;
+
+        setDataName(ds.name);
+        // 自动填参数：有 default 用 default，空值用合理测试值
+        var filledParams = (ds.params || []).map(function(p) {
+            var v = p.default || '';
+            if (!v && v !== '0') {
+                if (p.name.toLowerCase().indexOf('json') >= 0) v = '[]';
+                else if (p.type === 'Integer' || p.type === 'integer') v = '1';
+                else if (p.type === 'Double' || p.type === 'double') v = '0.00';
+                else v = 'test_' + p.name;
+            }
+            return { name: p.name, value: v, type: p.type || 'String' };
+        });
+        setParams(filledParams);
+        setResult(null);
+        setError(null);
+        setRequestTime(null);
+    }
 
     function handleApiTypeChange(type) {
         setApiType(type);
@@ -71,7 +119,7 @@ function App() {
     }
 
     function addParam() {
-        setParams([...params, { name: '', value: '', type: 'String' }]);
+        setParams(params.concat([{ name: '', value: '', type: 'String' }]));
     }
 
     function removeParam(index) {
@@ -79,7 +127,7 @@ function App() {
     }
 
     function updateParam(index, field, value) {
-        var newParams = [...params];
+        var newParams = params.slice();
         newParams[index][field] = value;
         setParams(newParams);
     }
@@ -166,7 +214,7 @@ function App() {
                         if (parsed.error) return '代理层错误: ' + parsed.error;
                         if (parsed.success === false) return '业务层错误: ' + (parsed.message || JSON.stringify(parsed));
                     } catch (e) {
-                        if (a1.toLowerCase().includes('error')) return '代理层错误: ' + a1;
+                        if (a1.toLowerCase().indexOf('error') >= 0) return '代理层错误: ' + a1;
                     }
                 }
             }
@@ -175,6 +223,7 @@ function App() {
     }
 
     var errMsg = result ? getErrorMessage(result) : null;
+    var dsOptions = datasets.map(function(ds) { return { value: ds.name, label: ds.name + ' (' + (ds.type || '?') + ')' }; });
 
     return (
         <div style={{ padding: '24px', maxWidth: '960px', margin: '0 auto' }}>
@@ -183,6 +232,57 @@ function App() {
                 <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>数据层接口测试工具 — 验证 /api/data 和 /api/report</p>
             </div>
 
+            {/* ═══ 加载 dev_task.json ═══ */}
+            <Card size="small" style={{ marginBottom: '16px', background: '#f6f8fa' }}>
+                <Collapse ghost items={[{
+                    key: 'task',
+                    label: React.createElement('span', { style: { fontWeight: 500, fontSize: 14 } },
+                        '📋 从 dev_task.json 加载' + (taskLoaded ? ' （已加载 ' + datasets.length + ' 个数据集）' : '')),
+                    children: React.createElement('div', null,
+                        React.createElement('p', { style: { color: '#666', fontSize: 12, marginTop: 0, marginBottom: 8 } },
+                            '粘贴 dev_task.json 完整内容，点击加载后可通过下拉菜单一键选择数据集，自动填入所有参数'),
+                        React.createElement(Input.TextArea, {
+                            rows: 4,
+                            placeholder: '粘贴 dev_task.json 内容...',
+                            value: taskJson,
+                            onChange: function(e) { setTaskJson(e.target.value); },
+                            style: { fontFamily: 'monospace', fontSize: 11, marginBottom: 8 }
+                        }),
+                        taskError && React.createElement('div', {
+                            style: { color: '#ff4d4f', fontSize: 12, marginBottom: 8 }
+                        }, taskError),
+                        React.createElement('div', { style: { display: 'flex', gap: 8 } },
+                            React.createElement(Button, {
+                                type: 'primary', size: 'small',
+                                onClick: handleLoadTask
+                            }, '加载'),
+                            taskLoaded && React.createElement(Button, {
+                                size: 'small',
+                                onClick: function() {
+                                    setTaskJson(''); setDatasets([]); setSelectedDs(undefined);
+                                    setTaskLoaded(false); setTaskError('');
+                                }
+                            }, '清除')
+                        ),
+                        taskLoaded && React.createElement('div', { style: { marginTop: 12 } },
+                            React.createElement('div', { style: { fontSize: 12, color: '#666', marginBottom: 4 } }, '选择数据集：'),
+                            React.createElement(Select, {
+                                placeholder: '选择数据集自动填入参数',
+                                style: { width: '100%' },
+                                showSearch: true,
+                                value: selectedDs,
+                                onChange: handleSelectDataset,
+                                options: dsOptions,
+                                filterOption: function(input, option) {
+                                    return (option.label || '').toLowerCase().indexOf(input.toLowerCase()) >= 0;
+                                }
+                            })
+                        )
+                    )
+                }]} />
+            </Card>
+
+            {/* ═══ 请求配置 ═══ */}
             <Card style={{ marginBottom: '24px' }}>
                 <Space style={{ marginBottom: '24px' }}>
                     <Button
@@ -305,6 +405,7 @@ function App() {
                 </div>
             </Card>
 
+            {/* ═══ 返回结果 ═══ */}
             {(result || error || requestTime != null) && (
                 <Card
                     title={
@@ -349,4 +450,4 @@ function App() {
     );
 }
 
-ReactDOM.createRoot(document.getElementById('app-root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('app-root')).render(React.createElement(App));

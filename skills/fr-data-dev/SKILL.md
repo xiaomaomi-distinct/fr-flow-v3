@@ -279,84 +279,48 @@ cp "$FR_PROJECTS_DIR/{project}/data/{module}_data.cpt" \
 
 ### 7. 接口验证（必须逐条验证，不可跳过）
 
-**这是数据层开发的强制环节。** 每个 dataset 都必须通过 api_tester 验证。
+**这是数据层开发的强制环节。** 每个 dataset 都必须验证通过。
 
-**验证工具**：技能包内置 `api_verify.spec.js`，基于 Playwright 自动化。依赖已通过 `package.json` 管理。
-
-#### 一次性环境准备（首次使用技能包时执行）
+#### 环境准备（首次使用技能包时执行一次）
 
 ```bash
 cd "$FR_WORKSPACE/foundation/tools/api_tester"
-npm install                    # 安装 playwright（JS 库）
-npx playwright install chromium  # 下载浏览器二进制（约 300MB）
+npm install                     # 安装 playwright
+npx playwright install chromium # 下载浏览器
+
+# 部署 api_tester 页面（如尚未部署）
+export PYTHONIOENCODING=utf-8
+python "$FR_WORKSPACE/scripts/display/display_writer.py"   --jsx "$FR_WORKSPACE/foundation/tools/api_tester/api_tester.jsx"   --output "$FR_WORKSPACE/foundation/tools/api_tester/api_tester.cpt"
+cp "$FR_WORKSPACE/foundation/tools/api_tester/api_tester.cpt"    "$FR_REPORTLETS/api/api_tester.cpt"
 ```
 
-#### 使用步骤
+#### 主流程：一键自动验证（推荐）
 
 ```bash
-# 从 api_tester 目录直接执行，--task 自动提取全部数据集
 cd "$FR_WORKSPACE/foundation/tools/api_tester"
 
-node api_verify.spec.js \
-  --cpt "{project}/data/{module}_data.cpt" \
-  --task "$FR_PROJECTS_DIR/{project}/docs/dev_task.json"
-```
-
-也支持手动指定数据集（调试用）：
-
-```bash
-node api_verify.spec.js \
-  --cpt "fr_dev_demo/data/demo_data.cpt" \
-  --dataset '{"name":"book_qry","type":"list","params":[{"name":"p_page","value":"1","type":"String"},{"name":"p_pagesize","value":"5","type":"String"}]}'
+node api_verify.spec.js   --cpt "{project}/data/{module}_data.cpt"   --task "$FR_PROJECTS_DIR/{project}/docs/dev_task.json"
 ```
 
 **脚本自动完成**：
-1. 从 `--task` 提取全部数据集定义（无需手动编辑 CONFIG）
-2. 打开 api_tester → 填写 CPT 路径 + 数据集名称
-3. 清除默认分页参数 → 按 dataset.params 逐条添加
-4. 发送请求 → 检查 `err_code === 0` → 汇总 ✅/❌
-5. 任何一条失败，exit code 非 0
+1. 从 `--task` 提取全部数据集定义和参数
+2. 空参数自动填充合理测试值（Integer→1，String→test_xxx，含json→[]）
+3. 逐条通过 api_tester 页面调用 `/api/data`
+4. 检查每条 `err_code === 0`，汇总 ✅/❌
+5. 全部通过 exit 0，任何一条失败 exit 1
 
-**运行示例**：
+#### 手动调试（排查单条失败时用）
+
+浏览器打开 api_tester 页面，**粘贴 dev_task.json 内容**到「加载任务」区，下拉选择数据集自动填入 CPT 路径、数据集名和参数，点「发送请求」。
+
 ```
-  ℹ 从 task 提取了 7 个数据集
-
-🔬 API 数据层验证
-   CPT: fr_dev_demo/data/demo_data.cpt
-   待验证: 7 个数据集
-
-── book_qry (list)
-  ✅ err_code=0, 10 条 (51ms)
-── book_total (stat)
-  ✅ err_code=0, 1 条 (22ms)
-── book_by_id (detail)
-  ✅ err_code=0, 1 条 (18ms)
-── dict_category (dict)
-  ✅ err_code=0, 4 条 (24ms)
-── book_insert (insert)
-  ✅ err_code=0, 1 条 (46ms)
-── book_update (update)
-  ✅ err_code=0, 1 条 (38ms)
-── book_delete (delete)
-  ✅ err_code=0, 1 条 (30ms)
-
-══════════════════════════════════
-  总计 7  |  ✅ 7  |  ❌ 0
+{FR_SERVER_URL}webroot/decision/view/report?op=write&reportlet=api/api_tester.cpt
 ```
 
-> **注意**：不要在项目目录下复制脚本执行。`require('playwright')` 的模块解析从脚本所在目录开始，复制会断开与 `node_modules` 的路径关系。
-
-> **api_tester 可修改**：如果 api_tester 页面需要调整，编辑 `$FR_WORKSPACE/foundation/tools/api_tester/api_tester.jsx`，走 display_writer.py 重新发布。不要手动改 CPT。
-
-**验证清单**（逐条打勾）：
-
-| # | 数据集 | 类型 | 验证点 | 结果 |
-|---|--------|------|--------|------|
-| 1 | `{module}_qry` | list | 返回数组，err_code=0 | |
-| 2 | `{module}_total` | stat | 返回 total 字段 | |
-| 3 | `{module}_by_id` | detail | 传入 p_id 返回单条 | |
-| 4 | `dict_*` | dict | 返回 value/label 对 | |
-| n | ... | ... | ... | |
+命令行单条（不依赖 task 文件）：
+```bash
+node api_verify.spec.js   --cpt "{project}/data/{module}_data.cpt"   --dataset '{"name":"book_qry","type":"list","params":[...]}'
+```
 
 ### 8. 验收标准
 

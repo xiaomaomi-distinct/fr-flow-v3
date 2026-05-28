@@ -67,17 +67,21 @@ function parseArgs(args) {
                 };
             });
 
-            // 为写入类提供合理测试参数
+            // 为所有数据集填充空参数的合理测试值
             config.datasets.forEach(function(ds) {
-                if (ds.type === 'insert' || ds.type === 'update' || ds.type === 'delete') {
-                    ds.params.forEach(function(p) {
-                        if (!p.value && p.value !== '0') {
-                            if (p.type === 'Integer') p.value = '1';
-                            else if (p.type === 'Double') p.value = '0.00';
-                            else p.value = 'test_' + p.name;
+                ds.params.forEach(function(p) {
+                    if (!p.value && p.value !== '0') {
+                        if (p.name.toLowerCase().indexOf('json') >= 0) {
+                            p.value = '[]';
+                        } else if (p.type === 'Integer') {
+                            p.value = '1';
+                        } else if (p.type === 'Double') {
+                            p.value = '0.00';
+                        } else {
+                            p.value = 'test_' + p.name;
                         }
-                    });
-                }
+                    }
+                });
             });
 
             console.log(`  ℹ 从 task 提取了 ${config.datasets.length} 个数据集`);
@@ -141,33 +145,39 @@ async function testDataset(page, dataset, config) {
 
         // 解析结果
         const outcome = await page.evaluate(() => {
-            const errDiv = document.querySelector('[style*="fff2f0"]');
-            const pre = document.querySelector('pre');
-            const tag = document.querySelector('.ant-tag');
-
+            var pre = document.querySelector('pre');
+            var tag = document.querySelector('.ant-tag');
             if (pre) {
                 try {
-                    const json = JSON.parse(pre.textContent);
+                    var json = JSON.parse(pre.textContent);
                     if (json.err_code === 0) {
                         return {
                             pass: true,
-                            detail: `err_code=0, ${json.data ? json.data.length : 0} 条`,
+                            detail: 'err_code=0, ' + (json.data ? json.data.length : 0) + ' 条',
                             ms: tag ? tag.textContent : null
                         };
                     }
-                    return { pass: false, detail: `err_code=${json.err_code}, msg=${json.err_msg || ''}` };
+                    return { pass: false, detail: 'err_code=' + json.err_code + ', msg=' + (json.err_msg || '') };
                 } catch (e) {
                     return { pass: false, detail: 'JSON解析失败: ' + e.message };
                 }
             }
+            var errDiv = document.querySelector('[style*="fff2f0"]');
             if (errDiv) {
-                return { pass: false, detail: errDiv.textContent.substring(0, 100) };
+                return { pass: false, detail: errDiv.textContent.substring(0, 200) };
             }
-            return { pass: false, detail: '未找到响应' };
+            var body = document.body.innerText;
+            if (body) {
+                var t = body.trim().substring(0, 300);
+                return { pass: false, detail: '页面内容: ' + t };
+            }
+            return { pass: false, detail: '未找到响应（页面空白）' };
         });
 
         const icon = outcome.pass ? '✅' : '❌';
-        console.log(`  ${icon} ${outcome.detail}${outcome.ms ? ' (' + outcome.ms + ')' : ''}`);
+        var line = '  ' + icon + ' ' + outcome.detail;
+        if (outcome.pass && outcome.ms) line += ' (' + outcome.ms + ')';
+        console.log(line);
         return { dataset: dsName, ...outcome };
 
     } catch (err) {

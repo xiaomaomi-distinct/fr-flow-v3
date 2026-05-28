@@ -104,18 +104,37 @@ ls "$FR_REPORTLETS/{project}/pages/"
 
 ### 2. 执行测试
 
-使用 Playwright 浏览器逐条执行测试用例。**测试的是最终页面功能，从用户视角验证。**
+**主流程：qa_verify.spec.js 自动验证**（推荐，覆盖页面渲染 + API 连通性）
 
-```
-测试流程：
-  1. 打开被测试页面
-  2. 按 case.steps 逐条操作
-  3. 观察实际结果
-  4. 与 case.expected 对比
-  5. 记录通过/失败
+```bash
+cd "$FR_WORKSPACE/foundation/tools/api_tester"
+
+node qa_verify.spec.js \
+  --task "$FR_PROJECTS_DIR/{project}/docs/qa_task.json" \
+  --project "{project}"
 ```
 
-**每个测试用例独立执行**，不依赖前一个用例的状态（除非 qa_task.json 明确标注了依赖关系）。
+脚本自动完成：
+1. **阶段 A — API 连通性**：调用 api_verify.spec.js 验证所有数据集
+2. **阶段 B — 页面渲染验证**：打开每个页面，检查：
+   - JS Console 报错（过滤 BI 等已知无害错误）
+   - 关键 DOM 元素是否存在（Table / Descriptions / Tabs 等，按页面类型验证）
+   - 所有 `/api/data` 网络请求是否返回 `err_code: 0`
+   - 自动截图保存到 `docs/screenshots/`
+3. 生成 Markdown 报告 → `docs/qa_report_{project}.md`
+
+> `--headed` 参数可在有显示器时开启可视化浏览器，人工确认页面视觉效果。
+
+**手动补充测试**（qa_verify 无法自动化的场景）：
+
+对于需要模拟用户交互的用例（如新增/编辑/删除流程、表单验证），用 Playwright 直接操作页面：
+
+```bash
+# 录制操作生成脚本
+npx playwright codegen "http://localhost:18080/webroot/decision/view/report?op=write&reportlet={project}/pages/{page}.cpt"
+```
+
+录制得到的操作脚本整理后写入 `$FR_PROJECTS_DIR/{project}/test/page_verify.spec.js`，作为该项目的手动验证脚本。
 
 ### 3. 记录结果
 
