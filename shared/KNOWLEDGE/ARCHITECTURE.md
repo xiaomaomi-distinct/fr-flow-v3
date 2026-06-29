@@ -183,7 +183,7 @@ reportlets/
 ├── 写入类数据集（调用存储过程）
 │   ├── insert_xxx        # 新增
 │   ├── update_xxx        # 更新
-│   └── sp_delete         # 删除（通用）
+│   └── delete_xxx        # 删除（绑定具体表名）
 │
 └── 批量导入数据集
     ├── batch_insert      # 写入临时表
@@ -228,7 +228,7 @@ reportlets/
     <DatabaseName><![CDATA[common_db]]></DatabaseName>
   </Connection>
   <Query><![CDATA[
-    CALL sp_insert_equipment('${p_asset_no}', '${p_name}', ...)
+    CALL sp_equipment_insert('${p_asset_no}', '${p_name}', ...)
   ]]></Query>
 </TableData>
 ```
@@ -702,9 +702,9 @@ SELECT JSON_OBJECT(
 
 | 类型 | 命名 | 示例 |
 |------|------|------|
-| 新增 | `sp_insert_{表名}` | `sp_insert_equipment` |
-| 更新 | `sp_update_{表名}` | `sp_update_equipment` |
-| 删除 | `sp_delete` | `sp_delete`（通用，表名作为参数） |
+| 新增 | `sp_{别名}_insert` | `sp_equipment_insert` |
+| 更新 | `sp_{别名}_update` | `sp_equipment_update` |
+| 删除 | `sp_{别名}_delete` | `sp_equipment_delete` |
 | 批量导入 | `sp_batch_import` | `sp_batch_import`（通用） |
 | 业务操作 | `sp_{动词}_{名词}` | `sp_borrow_equipment` |
 
@@ -1035,11 +1035,9 @@ function showGuideBubble(guideId) {
 
 | 脚本 | 说明 |
 |------|------|
-| sp_insert.sql | 通用插入 |
-| sp_update.sql | 通用更新 |
-| sp_delete.sql | 通用删除 |
-| sp_insert_equipment.sql | 设备新增 |
-| sp_update_equipment.sql | 设备更新 |
+| sp_equipment_insert.sql | 设备新增 |
+| sp_equipment_update.sql | 设备更新 |
+| sp_equipment_delete.sql | 设备删除 |
 | sp_borrow_equipment.sql | 借用申请 |
 | sp_return_borrow.sql | 归还设备 |
 | sp_batch_import.sql | 批量写入临时表 |

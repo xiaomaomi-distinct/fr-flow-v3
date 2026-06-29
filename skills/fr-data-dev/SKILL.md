@@ -121,10 +121,10 @@ mysql -h "$FR_MYSQL_HOST" -P "$FR_MYSQL_PORT" -u "$FR_MYSQL_USER" -p"$MYSQL_PWD"
 mkdir -p "$FR_PROJECTS_DIR/{project}/sql"
 
 # 根据 dev_task.json 的 tables 定义生成 CREATE TABLE 语句
-# 写入 $FR_PROJECTS_DIR/{project}/sql/init.sql
+# 写入 $FR_PROJECTS_DIR/{project}/sql/建表脚本.sql
 
 mysql -h "$FR_MYSQL_HOST" -P "$FR_MYSQL_PORT" -u "$FR_MYSQL_USER" -p"$MYSQL_PWD" \
-  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/init.sql"
+  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/建表脚本.sql"
 ```
 
 **表不存在 + dev_task.json 无 `database.tables`** → **停止**，报错：
@@ -143,7 +143,7 @@ mkdir -p "$FR_REPORTLETS/{project}/data
 
 ### 3. MySQL 脚本编写
 
-如果 `dev_task.json` 中有 `database.tables` 定义，编写 `sql/init.sql`：
+如果 `dev_task.json` 中有 `database.tables` 定义，编写 `sql/建表脚本.sql`：
 
 **建表规范**：
 - 所有表必须有 `id INT AUTO_INCREMENT PRIMARY KEY`
@@ -166,12 +166,28 @@ CREATE TABLE IF NOT EXISTS {表名} (
 
 **存储过程规范**：
 
-根据 dev_task.json 中 `type: insert/update/delete` 的数据集，编写对应的存储过程脚本 `sql/procedures.sql`：
+根据 dev_task.json 中 `type: insert/update/delete` 的数据集，编写对应的存储过程脚本 `sql/存储过程.sql`。
+
+**命名规范**：`sp_{别名}_{动作}`，别名取数据集对应模块的别名（如表名或模块名）。所有 SP 放在同一 schema 下，靠前缀区分归属。
+
+```
+sp_repair_order_insert   ← 一眼看出是 repair_order 项目的
+sp_repair_order_update
+sp_repair_order_delete
+sp_employee_expense_insert
+sp_employee_expense_update
+...
+```
+
+`SHOW PROCEDURE STATUS WHERE Name LIKE 'sp_repair_order%'` 即可列出该项目全部 SP，废弃时批量清理。
+
+**DROP 保护**：每个 SP 创建前先 `DROP PROCEDURE IF EXISTS`，保证脚本可重复执行。升级 SP 时直接重新运行 `存储过程.sql` 即可。
 
 ```sql
 -- 新增
+DROP PROCEDURE IF EXISTS sp_{别名}_insert;
 DELIMITER $$
-CREATE PROCEDURE sp_insert_{表名}(
+CREATE PROCEDURE sp_{别名}_insert(
   IN p_name VARCHAR(100),
   IN p_status VARCHAR(20)
 )
@@ -182,8 +198,9 @@ END$$
 DELIMITER ;
 
 -- 更新
+DROP PROCEDURE IF EXISTS sp_{别名}_update;
 DELIMITER $$
-CREATE PROCEDURE sp_update_{表名}(
+CREATE PROCEDURE sp_{别名}_update(
   IN p_id INT,
   IN p_name VARCHAR(100),
   IN p_status VARCHAR(20)
@@ -194,31 +211,32 @@ BEGIN
 END$$
 DELIMITER ;
 
--- 删除（通用，表名作为参数）
+-- 删除（每个项目自己的，不混用通用的）
+DROP PROCEDURE IF EXISTS sp_{别名}_delete;
 DELIMITER $$
-CREATE PROCEDURE sp_delete(
-  IN p_table VARCHAR(100),
+CREATE PROCEDURE sp_{别名}_delete(
   IN p_id INT
 )
 BEGIN
-  SET @sql = CONCAT('DELETE FROM ', p_table, ' WHERE id = ', p_id);
-  PREPARE stmt FROM @sql;
-  EXECUTE stmt;
-  DEALLOCATE PREPARE stmt;
+  DELETE FROM {表名} WHERE id = p_id;
   SELECT JSON_OBJECT('success', TRUE, 'message', '删除成功') AS result;
 END$$
 DELIMITER ;
 ```
 
-**关键约束**：所有存储过程必须返回 JSON（`JSON_OBJECT`），便于前端统一处理。
+**关键约束**：
+- 所有存储过程必须返回 JSON（`JSON_OBJECT`），便于前端统一处理
+- 命名含项目前缀，同一 schema 下不重名
+- 删除 SP 绑定具体表名，不要用动态 SQL（`PREPARE` / `EXECUTE`），避免误删其他表
+- 每个 SP 前必须有 `DROP PROCEDURE IF EXISTS`，确保可重复执行
 
 执行脚本：
 ```bash
 MYSQL_PWD=$(grep 'password:' "$FR_WORKSPACE/.fr.yaml" | head -1 | sed 's/.*: *//')
 mysql -h "$FR_MYSQL_HOST" -P "$FR_MYSQL_PORT" -u "$FR_MYSQL_USER" -p"$MYSQL_PWD" \
-  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/init.sql"
+  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/建表脚本.sql"
 mysql -h "$FR_MYSQL_HOST" -P "$FR_MYSQL_PORT" -u "$FR_MYSQL_USER" -p"$MYSQL_PWD" \
-  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/procedures.sql"
+  "$FR_MYSQL_DATABASE" < "$FR_PROJECTS_DIR/{project}/sql/存储过程.sql"
 ```
 
 ### 4. 权限控制实现

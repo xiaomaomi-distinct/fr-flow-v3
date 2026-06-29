@@ -22,7 +22,7 @@ version: 3.0.0
 
 ```
 /fr-pm                          # 1. 需求分析、设计文档
-    ↓ 产出: requirements.md, dev_task.json, qa_task.json
+    ↓ 产出: 需求确认书.md, dev_task.json, qa_task.json
     ↓ 自动触发
 /fr-data-dev myproject          # 2. 数据层开发 + 接口验证
     ↓ 验收通过后自动触发

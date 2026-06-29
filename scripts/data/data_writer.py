@@ -172,6 +172,9 @@ def write(output_path: str, task_path: str, *,
         _die(f"任务单 JSON 格式错误：{e}")
 
     datasets = task.get("database", {}).get("datasets", [])
+    task_db = task.get("database", {}).get("db_name", "")
+    if task_db and db_name == "common_db":
+        db_name = task_db
     if not datasets:
         _warn("任务单中没有找到 datasets 定义")
 

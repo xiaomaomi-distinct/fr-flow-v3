@@ -129,7 +129,7 @@ cat "$FR_WORKSPACE/shared/KNOWLEDGE/ARCHITECTURE.md"
 
 ```bash
 # 写入路径
-cat > "$FR_PROJECTS_DIR/{project}/docs/requirements.md" << 'EOF'
+cat > "$FR_PROJECTS_DIR/{project}/docs/需求确认书.md" << 'EOF'
 # 需求文档 - {项目名}
 
 ## 基本信息
@@ -255,7 +255,7 @@ mkdir -p "$FR_REPORTLETS/{project}"/{data,pages}
 }
 ```
 
-> **注意**：PM 只定义表结构到 dev_task.json，`sql/init.sql` 建表脚本的生成和执行由 data-dev 负责。
+> **注意**：PM 只定义表结构到 dev_task.json，`sql/建表脚本.sql` 建表脚本的生成和执行由 data-dev 负责。
 
 #### 2. 数据集设计
 
@@ -267,9 +267,9 @@ mkdir -p "$FR_REPORTLETS/{project}"/{data,pages}
 | `stat` | 总数统计 | `{module}_total` | SELECT COUNT(*) |
 | `detail` | 单条查询（编辑回填） | `{module}_by_id` | SELECT WHERE id |
 | `dict` | 下拉字典 | `dict_{字段}` | SELECT UNION |
-| `insert` | 新增操作 | `{module}_insert` | CALL sp_insert_... |
-| `update` | 更新操作 | `{module}_update` | CALL sp_update_... |
-| `delete` | 删除操作 | `{module}_delete` | CALL sp_delete |
+| `insert` | 新增操作 | `{module}_insert` | CALL sp_{别名}_insert |
+| `update` | 更新操作 | `{module}_update` | CALL sp_{别名}_update |
+| `delete` | 删除操作 | `{module}_delete` | CALL sp_{别名}_delete |
 
 **批量数据集设计要点**：
 - 列表查询必须配合统计查询（list + stat 成对出现）
@@ -531,7 +531,7 @@ $FR_PROJECTS_DIR/{project}/docs/qa_task.json
 ```
 主对话（PM 角色）
   │  上下文：用户需求 + fr-pm SKILL.md + 架构文档
-  │  产出：requirements.md, dev_task.json, qa_task.json
+  │  产出：需求确认书.md, dev_task.json, qa_task.json
   │
   ├─→ 子Agent（data-dev）
   │    上下文：fr-data-dev SKILL.md + dev_task.json + 工具链脚本
@@ -573,7 +573,7 @@ $FR_PROJECTS_DIR/{project}/docs/qa_task.json
 
 | # | 文件 | 路径 | 受众 |
 |---|------|------|------|
-| 1 | 需求文档 | `$FR_PROJECTS_DIR/{project}/docs/requirements.md` | 所有角色 |
+| 1 | 需求文档 | `$FR_PROJECTS_DIR/{project}/docs/需求确认书.md` | 所有角色 |
 | 2 | 开发任务单 | `$FR_PROJECTS_DIR/{project}/docs/dev_task.json` | data-dev, display-dev |
 | 3 | 测试任务单 | `$FR_PROJECTS_DIR/{project}/docs/qa_task.json` | qa |
 

@@ -259,7 +259,7 @@ function fetchTotal(params) {
 
 #### 6.2 增删改操作（调用存储过程）
 
-数据层的 `insert_*`、`update_*`、`sp_delete` 等数据集通过 `/api/data` 调用：
+数据层的 `insert_*`、`update_*`、`delete_*` 等数据集通过 `/api/data` 调用：
 
 ```javascript
 // 新增
@@ -305,11 +305,10 @@ function handleDelete(id) {
                 contentType: 'application/json',
                 data: JSON.stringify({
                     report_path: PATH.getDataTemplate('{module}_data.cpt'),
-                    datasource_name: 'sp_delete',
+                    datasource_name: '{module}_delete',
                     page_number: -1,
                     page_size: -1,
                     parameters: [
-                        { name: 'p_table', type: 'String', value: '表名' },
                         { name: 'p_id', type: 'Integer', value: id },
                     ]
                 }),

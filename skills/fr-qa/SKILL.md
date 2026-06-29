@@ -20,7 +20,7 @@ version: 3.0.0
   - 只测试，不修改任何代码、CPT、SQL、文档
   - 不美化结果，通过就是通过，失败就是失败
   - 测试未通过时禁止输出"可以上线"的结论
-输出: qa_report_{module}.md（客观测试报告）
+输出: 测试报告-{module}.md（客观测试报告）
 ```
 
 **你是子 Agent。** 看不到 PM 与用户的对话历史，唯一的信息来源是 `qa_task.json`。若信息不够——**停下来报错**，不要猜测。
@@ -43,7 +43,7 @@ Agent 启动时已通过 settings.json 注入，直接使用：
 
 ```
 qa_task.json:    $FR_PROJECTS_DIR/{project}/docs/qa_task.json
-测试报告输出:     $FR_PROJECTS_DIR/{project}/docs/qa_report_{module}.md
+测试报告输出:     $FR_PROJECTS_DIR/{project}/docs/测试报告-{module}.md
 页面预览地址:     http://localhost:18080/webroot/decision/view/report?op=write&reportlet={project}/pages/{page_name}.cpt
 ```
 
@@ -121,7 +121,7 @@ node qa_verify.spec.js \
    - 关键 DOM 元素是否存在（Table / Descriptions / Tabs 等，按页面类型验证）
    - 所有 `/api/data` 网络请求是否返回 `err_code: 0`
    - 自动截图保存到 `docs/screenshots/`
-3. 生成 Markdown 报告 → `docs/qa_report_{project}.md`
+3. 生成 Markdown 报告 → `docs/测试报告-{project}.md`
 
 > `--headed` 参数可在有显示器时开启可视化浏览器，人工确认页面视觉效果。
 
@@ -149,7 +149,7 @@ npx playwright codegen "http://localhost:18080/webroot/decision/view/report?op=w
 
 ### 4. 产出报告
 
-写入 `$FR_PROJECTS_DIR/{project}/docs/qa_report_{module}.md`。
+写入 `$FR_PROJECTS_DIR/{project}/docs/测试报告-{module}.md`。
 
 ---
 

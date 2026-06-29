@@ -297,7 +297,7 @@ async function verifyPage(page, pageDef, config) {
     var reportPath = path.join(
         process.env.FR_PROJECTS_DIR || '.',
         config.project, 'docs',
-        'qa_report_' + config.project + '.md'
+        '测试报告-' + config.project + '.md'
     );
 
     var md = '# QA 验证报告 - ' + config.project + '\n\n';
