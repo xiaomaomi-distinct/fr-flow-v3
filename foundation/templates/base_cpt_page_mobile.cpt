@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkBook xmlVersion="20211223" releaseVersion="11.5.0">
+<ReportWebAttr>
+<ServerPrinter/>
+<WebWriteContent>
+<Listener event="afterload">
+<JavaScript class="com.fr.js.JavaScriptImpl">
+<Parameters/>
+<Content>
+<![CDATA[
+/* ================================================================
+   移动端展示层 CPT 骨架（base_cpt_page_mobile.cpt）
+
+   与 PC 版（base_cpt_page.cpt）的关键差异：
+     1. viewport meta 强制注入
+     2. hideStyle 用通杀模式 + antd-mobile Portal 白名单
+     3. #app-root 用 position:fixed 覆盖整个 viewport，含 safe-area padding
+     4. 主动动态加载 React/ReactDOM/dayjs/jQuery/antd-mobile（移动 SPA 不读 jsImportList）
+     5. 业务代码使用 antdMobile 全局变量，不是 antd
+
+   PREAMBLE 与 POSTAMBLE 段固定，frm-display-dev 禁止修改
+   DEVELOPER ZONE 由 display_mobile/display_writer.py 注入 .jsx 编译后的内容
+================================================================ */
+
+(function() {
+    'use strict';
+
+/* ===== PREAMBLE（帆软固定结构 + 移动端环境初始化，勿删勿改） ===== */
+
+    // 1. viewport meta 强制注入（帆软移动 SPA 可能不带或带错）
+    (function ensureViewport() {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.setAttribute('name', 'viewport');
+            document.head.appendChild(meta);
+        }
+        meta.setAttribute('content',
+            'width=device-width, initial-scale=1, maximum-scale=1, ' +
+            'user-scalable=no, viewport-fit=cover');
+    })();
+
+    // 2. PATH 路径基础设施（与 PC 完全一致，复用现有数据接口约定）
+    var PATH = {
+        currentDir: (function() {
+            try {
+                var name = FR.remoteEvaluate("=reportName");
+                return name.substring(0, name.lastIndexOf('/') + 1);
+            } catch (e) { return ''; }
+        })(),
+        apiBase: (function() {
+            try {
+                var servletURL = FR.remoteEvaluate("=servletURL");
+                var parts = servletURL.split('/');
+                return '/' + parts[1] + '/' + parts[2];
+            } catch (e) { return ''; }
+        })(),
+        getDataTemplate: function(filename) {
+            return this.currentDir.replace('/pages/', '/data/') + filename;
+        },
+        getTemplatePath: function(filename) {
+            return this.currentDir + filename;
+        }
+    };
+
+    // 3. hideStyle —— 通杀模式 + Portal 白名单（精准版）
+    //    策略：body > * 默认全部隐藏，但放出三类元素：
+    //      a. #app-root：应用主体
+    //      b. 自身带 adm- 类的元素（如 Popup、Picker 直接挂 .adm-popup）
+    //      c. 子孙包含 adm- 元素的容器（如 Toast 在无 class 的 wrapper div 内）
+    //    z-index：#app-root 用 100（高于 fr 但远低于 antd-mobile Portal 默认 1000）
+    var hideStyle = document.createElement('style');
+    hideStyle.innerHTML =
+        'html,body{margin:0!important;padding:0!important;background:#f5f5f5!important;' +
+            '-webkit-text-size-adjust:100%;}' +
+        'body>*:not(#app-root):not([class*="adm-"]):not(:has([class*="adm-"])){' +
+            'display:none!important;}' +
+        'body>#app-root{display:block!important;position:fixed!important;' +
+            'top:0!important;left:0!important;right:0!important;bottom:0!important;' +
+            'z-index:100!important;overflow-y:auto!important;' +
+            '-webkit-overflow-scrolling:touch;background:#f5f5f5!important;' +
+            'padding-top:env(safe-area-inset-top);' +
+            'padding-bottom:env(safe-area-inset-bottom);' +
+            'box-sizing:border-box;}';
+    document.head.appendChild(hideStyle);
+
+    // 4. 创建 #app-root，初始显示 loading 占位
+    var appRoot = document.createElement('div');
+    appRoot.id = 'app-root';
+    appRoot.innerHTML =
+        '<div style="text-align:center;padding:80px 20px;color:#888;font-size:14px;">' +
+        '<div style="display:inline-block;width:24px;height:24px;border:2px solid #ccc;' +
+        'border-top-color:#1677ff;border-radius:50%;animation:_frm_spin 0.8s linear infinite;">' +
+        '</div><div style="margin-top:12px;">正在加载组件库...</div></div>' +
+        '<style>@keyframes _frm_spin{to{transform:rotate(360deg);}}</style>';
+    document.body.appendChild(appRoot);
+
+    // 5. 全局错误兜底（任何运行时错误都会以红条形式置顶展示）
+    window.addEventListener('error', function(e) {
+        var box = document.getElementById('frm-error-banner');
+        if (!box) {
+            box = document.createElement('div');
+            box.id = 'frm-error-banner';
+            box.style.cssText = 'position:fixed;top:0;left:0;right:0;' +
+                'background:#ff4d4f;color:#fff;padding:8px;font-size:12px;' +
+                'z-index:9999;word-break:break-all;line-height:1.4;';
+            document.body.appendChild(box);
+        }
+        box.textContent = '[JS Error] ' + (e.message || '') +
+            ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?');
+    });
+
+    // 6. 动态加载组件库（PC/移动通用：检测全局是否已注入，没注入就加载）
+    var LIB_BASE = PATH.apiBase + '/help/lib/antd-mobile/';
+
+    var NEED_LOAD = (
+        typeof window.React === 'undefined' ||
+        typeof window.ReactDOM === 'undefined' ||
+        typeof window.antdMobile === 'undefined'
+    );
+
+    function loadCSS(url) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = url;
+        document.head.appendChild(l);
+    }
+
+    function loadScripts(urls, onComplete, onError) {
+        var i = 0;
+        function next() {
+            if (i >= urls.length) { onComplete(); return; }
+            var s = document.createElement('script');
+            s.src = urls[i++];
+            s.async = false;
+            s.onload = next;
+            s.onerror = function() { onError(s.src); };
+            document.head.appendChild(s);
+        }
+        next();
+    }
+
+    function bootBusiness() {
+
+/* ===== DEVELOPER ZONE BEGIN ===== */
+/* @FRM_DEVELOPER_ZONE@ */
+/* ===== DEVELOPER ZONE END ===== */
+
+    }
+
+    if (!NEED_LOAD) {
+        bootBusiness();
+    } else {
+        loadCSS(LIB_BASE + 'style.css');
+        loadScripts([
+            LIB_BASE + 'jquery-3.6.1.min.js',
+            LIB_BASE + 'react.min.js',
+            LIB_BASE + 'react-dom.min.js',
+            LIB_BASE + 'dayjs.min.js',
+            LIB_BASE + 'antd-mobile.umd.js'
+        ], bootBusiness, function(failedUrl) {
+            appRoot.innerHTML =
+                '<div style="text-align:center;padding:60px 20px;color:#ff4d4f;">' +
+                '<div style="font-size:16px;margin-bottom:12px;">⚠ 组件库加载失败</div>' +
+                '<div style="font-size:12px;word-break:break-all;color:#666;">' + failedUrl + '</div>' +
+                '<div style="font-size:11px;color:#888;margin-top:16px;">' +
+                '请检查 ' + LIB_BASE + ' 下文件是否存在</div>' +
+                '</div>';
+        });
+    }
+
+/* ===== POSTAMBLE（帆软固定结构，勿删勿改） ===== */
+})();
+]]></Content>
+</JavaScript>
+</Listener>
+<ToolBars/>
+<EditRowColor setColor="false"/>
+<WebWrite SheetPosition="3"/>
+<RptLocation isShowAtLeft="true"/>
+<UnloadCheck check="false"/>
+<ShowWidgets/>
+<OtherAttr autoStash="false"/>
+</WebWriteContent>
+</ReportWebAttr>
+<Report class="com.fr.report.worksheet.WorkSheet" name="sheet1">
+<ReportPageAttr>
+<HR/>
+<FR/>
+<HC/>
+<FC/>
+<USE REPEAT="false" PAGE="false" WRITE="false"/>
+</ReportPageAttr>
+<ColumnPrivilegeControl/>
+<RowPrivilegeControl/>
+<RowHeight defaultValue="723900">
+<![CDATA[723900,723900,723900,723900,723900,723900,723900,723900,723900,723900,723900]]></RowHeight>
+<ColumnWidth defaultValue="2743200">
+<![CDATA[2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200,2743200]]></ColumnWidth>
+<CellElementList>
+<C c="0" r="0" s="0">
+<PrivilegeControl/>
+<Expand>
+<cellSortAttr/>
+</Expand>
+</C>
+</CellElementList>
+<ReportAttrSet>
+<ReportSettings headerHeight="0" footerHeight="0">
+<PaperSetting/>
+<FollowingTheme background="true"/>
+<Background name="ColorBackground">
+<color>
+<FineColor color="-1" hor="-1" ver="-1"/>
+</color>
+</Background>
+</ReportSettings>
+</ReportAttrSet>
+<PrivilegeControl/>
+</Report>
+<ReportParameterAttr>
+<Attributes showWindow="true" delayPlaying="true" windowPosition="1" align="0" useParamsTemplate="true" currentIndex="0"/>
+<PWTitle>
+<![CDATA[参数]]></PWTitle>
+</ReportParameterAttr>
+<StyleList>
+<Style style_name="默认" full="true" border_source="-1" imageLayout="1">
+<FRFont name="simhei" style="0" size="72"/>
+<Background name="NullBackground"/>
+<Border/>
+</Style>
+</StyleList>
+<DesensitizationList/>
+<DesignerVersion DesignerVersion="LAA"/>
+<PreviewType PreviewType="1"/>
+<StrongestControlAttr class="com.fr.widgettheme.control.attr.WidgetDisplayEnhanceMarkAttr">
+<StrongestControlAttr widgetEnhance="false"/>
+</StrongestControlAttr>
+<TemplateThemeAttrMark class="com.fr.base.iofile.attr.TemplateThemeAttrMark">
+<TemplateThemeAttrMark name="经典浅灰" dark="false"/>
+</TemplateThemeAttrMark>
+<ForkIdAttrMark class="com.fr.base.iofile.attr.ForkIdAttrMark">
+<ForkIdAttrMark forkId="0b330108-1a1d-479a-b7d6-5ded33a7bd96"/>
+</ForkIdAttrMark>
+<TemplateIdAttMark class="com.fr.base.iofile.attr.TemplateIdAttMark">
+<TemplateIdAttMark TemplateId="0b330108-1a1d-479a-b7d6-5ded33a7bd96"/>
+</TemplateIdAttMark>
+</WorkBook>
