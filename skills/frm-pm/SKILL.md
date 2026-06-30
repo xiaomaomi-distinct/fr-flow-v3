@@ -4,7 +4,7 @@ description: |
   帆软移动端加壳前端开发项目经理角色。当用户输入 "/frm-pm" 或描述帆软**移动端**报表/前端开发需求时触发。
   负责需求分析、移动端 UI 设计、输出开发任务文档和验收标准，只写文档不写代码。
   产出：需求文档、dev_task.json（platform=mobile）、qa_task.json，完成后自动触发 fr-data-dev。
-version: 1.0.0
+version: 1.1.0
 ---
 
 # 帆软加壳方案 - 移动端项目经理（frm-PM）
@@ -74,10 +74,11 @@ qa_task schema:     $FR_WORKSPACE/schemas/qa_task.schema.json
 数据层骨架:         $FR_WORKSPACE/foundation/templates/base_cpt_data.cpt
 **移动展示层骨架**:  $FR_WORKSPACE/foundation/templates/base_cpt_page_mobile.cpt
 **移动 starter**:    $FR_WORKSPACE/foundation/scaffolds/mobile/starter.jsx
-**移动静态库**:      <contextPath>/help/lib/antd-mobile/   ← **contextPath 全局共用，不是项目级**
-                    本机 contextPath = /webroot/decision   → 物理路径 D:\...\webroot\decision\help\lib\antd-mobile\
-                    生产 contextPath = /wuhan/whznjc       → 物理路径 D:\...\reportlets\..\wuhan\whznjc\help\lib\antd-mobile\
-                    （由骨架的 PATH.apiBase 自动推导，所有移动端项目共用一份库）
+**移动资源策略**:    CDN 优先 + <contextPath>/help/lib/antd-mobile/ 本地兜底（骨架 PREAMBLE 统一处理）
+                    CDN: jsDelivr 固定版本（react@18.3.1 / antd-mobile@5.42.3 等，默认 3s 超时）
+                    本地兜底: 本机 /webroot/decision/help/lib/antd-mobile/；生产 /wuhan/whznjc/help/lib/antd-mobile/
+                    监控变量: window.__FRM_LIB_SOURCE = 'CDN' | '本地兜底' | 'global'
+                    所有移动端项目共用，不是项目级资源
 ```
 
 ---
@@ -108,14 +109,15 @@ qa_task schema:     $FR_WORKSPACE/schemas/qa_task.schema.json
 curl -s -o /dev/null -w "%{http_code}" "$FR_SERVER_URL/webroot/decision/login" 2>/dev/null \
   | grep -q "200\|302" && echo "✅ 帆软服务可访问" || echo "⚠️ 帆软服务未启动"
 
-# 6. 移动端静态库（contextPath 全局共用，6 个文件全部 HTTP 200 才算齐）
+# 6. 移动端本地兜底静态库（contextPath 全局共用，6 个文件全部 HTTP 200 才算兜底齐全）
+# 注意：生产移动端会优先走 CDN；这里检查的是 CDN 失败时的本地 fallback。
 LIB_BASE="${FR_SERVER_URL%/}/webroot/decision/help/lib/antd-mobile"
 LIB_OK=1
 for f in jquery-3.6.1.min.js react.min.js react-dom.min.js dayjs.min.js antd-mobile.umd.js style.css; do
     code=$(curl -s -o /dev/null -w "%{http_code}" "$LIB_BASE/$f")
-    [ "$code" = "200" ] || { echo "❌ 静态库缺失: $f ($code)"; LIB_OK=0; }
+    [ "$code" = "200" ] || { echo "❌ 本地兜底缺失: $f ($code)"; LIB_OK=0; }
 done
-[ "$LIB_OK" = "1" ] && echo "✅ 移动端静态库齐全（contextPath 全局共用）"
+[ "$LIB_OK" = "1" ] && echo "✅ 移动端本地兜底静态库齐全（CDN 失败时自动 fallback）"
 
 # 7. MySQL（如需建库）
 MYSQL_PWD=$(grep -A1 'password:' "$FR_WORKSPACE/.fr.yaml" | tail -1 | sed 's/.*: //')
@@ -129,7 +131,7 @@ mysql -h "$FR_MYSQL_HOST" -P "$FR_MYSQL_PORT" -u "$FR_MYSQL_USER" -p"$MYSQL_PWD"
 |---|---|
 | 全部 ✅ | 继续 |
 | ❌ 移动骨架 / starter / antd-mobile 知识库缺失 | **停止**，说明阶段 2 产物未部署，提示先把 `frm-mobile-skill-suite.md` 阶段 1+2 走完 |
-| ❌ 移动端静态库缺失 | **停止**，提示把 6 个文件部署到 FineReport contextPath 根下的 `help/lib/antd-mobile/`（本机 `webroot/decision/help/lib/antd-mobile/`，生产 `wuhan/whznjc/help/lib/antd-mobile/`），所有项目共用 |
+| ❌ 移动端本地兜底资源缺失 | **停止**，提示把 6 个文件部署到 FineReport contextPath 根下的 `help/lib/antd-mobile/`（本机 `webroot/decision/help/lib/antd-mobile/`，生产 `wuhan/whznjc/help/lib/antd-mobile/`），所有项目共用。生产正常情况下 CDN 优先，但本地兜底必须保留 |
 | ⚠️ 帆软服务 / MySQL | 不涉及则继续，涉及则停止 |
 
 ---
@@ -253,7 +255,7 @@ mkdir -p "$FR_PROJECTS_DIR/{project}"/{docs,sql,data,pages}
 mkdir -p "$FR_REPORTLETS/{project}"/{data,pages}
 ```
 
-> **静态库不需要每个项目建一份。** antd-mobile / React / jQuery / dayjs 库部署在 FineReport contextPath 根目录下的 `help/lib/antd-mobile/`（本机 `webroot/decision/help/lib/`，生产 `wuhan/whznjc/help/lib/`），所有移动端项目共用。骨架的 `PATH.apiBase` 会自动推导出正确 URL。如果是新部署的环境，先用下面的 HTTP 探测确认库可达；缺失则要求用户先把 6 个文件放到 contextPath 的 help/lib/antd-mobile/ 下。
+> **静态库不需要每个项目建一份。** 移动骨架默认 **CDN 优先 + FineReport contextPath 本地兜底**：生产公网移动端优先加载固定版本 CDN（减轻帆软服务器静态资源压力），CDN 失败 / 超时 / 全局变量未出现时自动 fallback 到 contextPath 根目录下的 `help/lib/antd-mobile/`（本机 `webroot/decision/help/lib/`，生产 `wuhan/whznjc/help/lib/`）。所有移动端项目共用同一份本地兜底。PM 只需确认兜底资源 6 个文件可达；业务页面不要写 CDN / 本地 script URL。
 
 ```bash
 # 探测静态库 HTTP 可达性（本机示例，contextPath=/webroot/decision）

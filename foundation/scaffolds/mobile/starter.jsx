@@ -6,6 +6,8 @@
   - 注入到 base_cpt_page_mobile.cpt 的 DEVELOPER ZONE
   - PATH / hideStyle / #app-root / 动态加载库 全部由骨架的 PREAMBLE 处理，
     本文件只负责 App 组件 + 渲染
+  - 资源加载策略（CDN 优先 + FineReport 本地兜底）也在骨架 PREAMBLE 中，
+    业务 JSX 不要手写 script/link 标签，也不要关心 CDN URL
 
   可用全局变量：React, ReactDOM, antdMobile, dayjs, $, FR, PATH
 

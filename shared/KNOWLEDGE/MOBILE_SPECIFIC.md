@@ -509,17 +509,60 @@ gotoPage('order_detail.cpt', { id: '123', from: 'list' });
 
 ## 七、生产部署与调试
 
-### 7.1 静态资源部署路径
+### 7.1 资源加载策略：CDN 优先 + 本地兜底
 
-骨架通过 `PATH.apiBase + '/help/lib/antd-mobile/'` 动态计算资源 URL：
+移动端骨架 `base_cpt_page_mobile.cpt` 的 PREAMBLE 固定段统一处理资源加载，**业务 JSX 不要手写任何 `<script>` / `<link>` / CDN URL**。
 
-| 环境 | apiBase | 资源实际位置 |
+加载顺序：
+
+```text
+1. 如果全局变量已存在（React / ReactDOM / antdMobile / $）
+   → 直接 bootBusiness()，window.__FRM_LIB_SOURCE = 'global'
+
+2. 否则优先尝试 CDN（固定版本，默认 3 秒超时）
+   → 成功：window.__FRM_LIB_SOURCE = 'CDN'
+
+3. CDN 任一文件失败 / 超时 / 全局变量未出现
+   → 自动切换 FineReport contextPath 本地兜底
+   → 成功：window.__FRM_LIB_SOURCE = '本地兜底'
+
+4. 本地兜底仍失败
+   → 顶部红条 + app-root 错误提示
+```
+
+CDN 固定版本：
+
+| 库 | 版本 |
+|---|---|
+| jQuery | 3.6.1 |
+| React | 18.3.1 |
+| ReactDOM | 18.3.1 |
+| dayjs | 1.11.13 |
+| antd-mobile | 5.42.3 |
+
+> **不要使用 latest**。公共 CDN 上生产建议后续补 SRI；当前策略依赖固定版本 + 本地兜底控制风险。
+
+本地兜底仍通过 `PATH.apiBase + '/help/lib/antd-mobile/'` 动态计算资源 URL：
+
+| 环境 | apiBase | 本地兜底资源实际位置 |
 |---|---|---|
 | 本机开发 | `/webroot/decision` | `webroot/decision/help/lib/antd-mobile/` |
 | 生产 | `/wuhan/whznjc` | `wuhan/whznjc/help/lib/antd-mobile/` |
 
-需要部署的 6 个文件：
+需要部署的本地兜底 6 个文件：
 - `react.min.js`、`react-dom.min.js`、`dayjs.min.js`、`jquery-3.6.1.min.js`、`antd-mobile.umd.js`、`style.css`
+
+运行时可以在控制台检查：
+
+```js
+window.__FRM_LIB_SOURCE        // 'CDN' | '本地兜底' | 'global'
+window.__FRM_LIB_SOURCE_TRYING // 当前尝试来源
+```
+
+### 7.1.1 为什么不放 starter.jsx？
+
+资源加载必须在业务代码前完成，且 `display_writer.py` 只替换骨架里的 DEVELOPER ZONE。`starter.jsx` 只是起步模板，真实项目可能完全重写。因此 CDN 优先 / 本地兜底必须放在骨架 PREAMBLE 中，不能放到 starter。
+
 
 ### 7.2 本机用 Playwright 模拟移动端
 

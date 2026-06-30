@@ -4,7 +4,7 @@ description: |
   帆软移动端前端测试工程师角色。当用户输入 "/frm-qa <项目名>" 时触发。
   读取 qa_task.json 执行移动端端到端功能测试（含 viewport 模拟、企微 UA、44px 触控、Popup 弹出、安全区适配等专项），产出客观测试报告。
   前置依赖：fr-data-dev + frm-display-dev 全部验收通过。
-version: 1.0.0
+version: 1.1.0
 ---
 
 # 帆软加壳方案 - 移动端测试工程师（frm-QA）
@@ -84,22 +84,22 @@ ls "$FR_REPORTLETS/{project}/data/{module}_data.cpt"
 # 移动展示页面
 ls "$FR_REPORTLETS/{project}/pages/"
 
-# 移动端静态库（contextPath 全局共用，非项目目录）—— 用 HTTP 探测，不 ls 文件系统
-# 骨架 PATH.apiBase 推导出 contextPath（本机 /webroot/decision，生产 /wuhan/whznjc），
-# 然后请求 <apiBase>/help/lib/antd-mobile/...
+# 移动端资源策略（CDN 优先 + 本地兜底）
+# QA 运行时要记录 window.__FRM_LIB_SOURCE（CDN / 本地兜底 / global）。
+# 这里探测本地兜底 6 个文件是否可达，确保 CDN 不可用时页面仍能加载。
 LIB_BASE="${FR_SERVER_URL%/}/webroot/decision/help/lib/antd-mobile"   # 本机；生产改 contextPath
 for f in jquery-3.6.1.min.js react.min.js react-dom.min.js dayjs.min.js antd-mobile.umd.js style.css; do
     code=$(curl -s -o /dev/null -w "%{http_code}" "$LIB_BASE/$f")
-    [ "$code" = "200" ] && echo "✅ $f" || echo "❌ $f ($code)"
+    [ "$code" = "200" ] && echo "✅ 本地兜底 $f" || echo "❌ 本地兜底 $f ($code)"
 done
 ```
 
 **任一缺失** → **停止**：
 
 ```
-❌ 被测对象未部署或静态库缺失。
+❌ 被测对象未部署或本地兜底静态资源缺失。
    缺失：{列出缺失项}
-   请确认 fr-data-dev + frm-display-dev 均已验收通过，且静态库 6 个文件部署到 FineReport contextPath 根下的 help/lib/antd-mobile/（**所有项目共用一份，不在项目目录**）
+   请确认 fr-data-dev + frm-display-dev 均已验收通过，且本地兜底 6 个文件部署到 FineReport contextPath 根下的 help/lib/antd-mobile/（**所有项目共用一份，不在项目目录**）。生产正常情况下 CDN 优先，但 fallback 必须保留
 ```
 
 ---
@@ -279,6 +279,7 @@ npx playwright install chromium
 | M1 | viewport meta | `<meta name="viewport" content="...user-scalable=no...">` 存在 | `page.$eval` |
 | M2 | 红条横幅 | `#frm-error-banner` 不存在 | `page.$('#frm-error-banner')` |
 | M3 | NavBar 渲染 | `.adm-nav-bar` 存在且文本与设计一致 | `page.$('.adm-nav-bar')` |
+| M3.5 | 资源来源 | 读取 `window.__FRM_LIB_SOURCE`，记录 `CDN` / `本地兜底` / `global`；CDN 失败并 fallback 不算失败，本地兜底也失败才 FAIL | `page.evaluate(() => window.__FRM_LIB_SOURCE)` |
 | M4 | 列表类型 | 使用 `.adm-list`（不是 `.ant-table`）| `page.$$('.adm-list-item')` |
 | M5 | 触控元素尺寸 | 主按钮 / List.Item 高度 ≥ 44px | `page.evaluate(el => el.getBoundingClientRect().height)` |
 | M6 | Popup 弹出 | 点击触发后 `.adm-popup-body` 可见（**不要用 `.adm-popup` 根容器，它是 Portal 在闭合时仍 visible=true，必踩坑**）| `await page.click(...); await page.locator('.adm-popup-body').isVisible()` |
@@ -442,7 +443,7 @@ http://localhost:8075/webroot/decision/view/report?viewlet={project}/pages/{page
 | 模拟 UA | {user_agent} |
 | 浏览器 | Chromium (Playwright) |
 | 数据层 CPT | {project}/data/{module}_data.cpt |
-| 静态库目录 | `<contextPath>/help/lib/antd-mobile/`（contextPath 全局共用） |
+| 静态资源来源 | `window.__FRM_LIB_SOURCE` = CDN / 本地兜底 / global；本地兜底目录 `<contextPath>/help/lib/antd-mobile/` |
 
 ## 移动端专项检查
 
@@ -545,7 +546,7 @@ QA 不自行设计用例，但 PM 可参考此节确保 qa_task.json 覆盖足�
 | `qa_task.json` 不存在 / 为空 | **停止**，报缺失 |
 | `platform != "mobile"` | **停止**，提示 "应走 /fr-qa" |
 | `test_cases[]` 为空 | **停止**，"无用例可执行" |
-| 静态库 HTTP 探测有 404 | 该用例 BLOCKED（页面会白屏），提示库部署在 contextPath 全局，非项目级 |
+| 本地兜底 HTTP 探测有 404 | 该用例 BLOCKED（CDN 不可用时页面会白屏），提示兜底库部署在 contextPath 全局，非项目级 |
 | 页面 404 / 500 | 该用例 BLOCKED，注明原因 |
 | 顶部红条横幅出现 | 该用例 FAIL，记录红条文本 |
 | Playwright `Cannot find module` | **停止**，提示在 `$FR_PROJECTS_DIR` 下运行或 `npm install playwright` |

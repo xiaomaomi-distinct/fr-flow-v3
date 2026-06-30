@@ -5,7 +5,44 @@
 
 ---
 
-## [3.1.0] — 2026-06-26
+## [3.1.1] — 2026-06-30
+
+### Changed · 移动端资源加载改为 CDN 优先 + 本地兜底
+
+- `foundation/templates/base_cpt_page_mobile.cpt`
+  - 移动端组件库加载策略从"仅 FineReport contextPath 本地静态资源"升级为：
+    **CDN 优先 → FineReport contextPath 本地兜底**
+  - CDN 固定版本：
+    - `jquery@3.6.1`
+    - `react@18.3.1`
+    - `react-dom@18.3.1`
+    - `dayjs@1.11.13`
+    - `antd-mobile@5.42.3`
+  - CDN 默认 3 秒超时，本地兜底默认 8 秒超时
+  - 任一 CDN 文件失败 / 超时 / 全局变量未出现，会自动切换本地兜底
+  - 本地兜底仍失败才显示 `#frm-error-banner` 与 app-root 错误提示
+  - 新增运行时监控变量：
+    - `window.__FRM_LIB_SOURCE = 'CDN' | '本地兜底' | 'global'`
+    - `window.__FRM_LIB_SOURCE_TRYING`
+  - 资源加载逻辑仍在骨架 PREAMBLE 固定段，不放入 `starter.jsx`，确保 `display_writer.py` 装配业务 JSX 时不会被替换掉
+- `foundation/scaffolds/mobile/starter.jsx`
+  - 补充注释：业务 JSX 不要手写 script/link，不要关心 CDN URL，资源策略由骨架统一处理
+- `skills/frm-*` 全部升级到 `version: 1.1.0`
+  - `frm-display-dev` 明确说明：**不是必须走本地资源**，本地仅作为 CDN 不可用时的兜底
+  - `frm-pm` 环境自检调整为"检查本地兜底资源"
+  - `frm-qa` 增加资源来源检测项，记录 `window.__FRM_LIB_SOURCE`
+  - `frm` 入口更新资源策略说明
+- `README.md`
+  - 快速开始第 5 步改为"部署本地兜底静态库"
+  - 技术栈表与移动端关键差异表更新为 CDN 优先 + 本地兜底
+
+### Notes
+
+- 本次改动不影响业务 JSX 写法。业务代码仍只使用全局变量：`React` / `ReactDOM` / `antdMobile` / `dayjs` / `$`
+- 已生成的旧 CPT 需要重新用 `display_mobile/display_writer.py` 编译部署后，才能获得新的 CDN 优先策略
+- 生产环境如安全审查要求禁止公共 CDN，可将骨架内 `RESOURCE_CONFIG.preferCdn` 改为 `false`，仍走本地兜底
+
+
 
 ### Added · 移动端 `frm-*` 技能套件首发
 

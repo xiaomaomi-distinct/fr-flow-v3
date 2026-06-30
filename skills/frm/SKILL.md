@@ -4,7 +4,7 @@ description: |
   帆软移动端加壳前端开发入口技能。当用户输入 "/frm" 或询问帆软**移动端**开发流程时触发。
   显示移动端技能列表和使用说明，用于启动移动端项目、了解 frm-* 套件。
   当用户提及帆软移动端报表、企业微信 H5、antd-mobile 页面时应主动使用此技能。
-version: 1.0.0
+version: 1.1.0
 ---
 
 # 帆软加壳移动端开发（frm-* 套件）
@@ -67,7 +67,7 @@ version: 1.0.0
 | 项 | 说明 |
 |---|---|
 | 帆软移动 SPA | URL `/url/mobile#/report?nodePath=...`，**不读 jsImportList** |
-| 动态加载库 | 骨架 afterload 自己加载 jquery / react / dayjs / antd-mobile |
+| 动态加载库 | 骨架 afterload 采用 **CDN 优先 + 本地兜底** 加载 jquery / react / dayjs / antd-mobile（本地兜底在 contextPath 全局 help/lib/antd-mobile/） |
 | viewport 强制 | width=device-width, user-scalable=no, viewport-fit=cover |
 | 安全区适配 | env(safe-area-inset-top/bottom) |
 | 触控合规 | 主按钮 ≥ 44px，字体 ≥ 14px |
@@ -92,7 +92,9 @@ Agent 启动时已注入环境变量（通过 settings.json）：
 移动展示层骨架:   $FR_WORKSPACE/foundation/templates/base_cpt_page_mobile.cpt
 移动 starter:    $FR_WORKSPACE/foundation/scaffolds/mobile/starter.jsx
 移动工具链:      $FR_WORKSPACE/scripts/display_mobile/
-移动静态库:      <contextPath>/help/lib/antd-mobile/  ← **contextPath 全局共用，不是项目级**
+移动静态资源:   CDN 优先 + <contextPath>/help/lib/antd-mobile/ 本地兜底
+                  CDN 固定版本：jquery@3.6.1 / react@18.3.1 / react-dom@18.3.1 / dayjs@1.11.13 / antd-mobile@5.42.3
+                  本地兜底：
                   本机 contextPath = /webroot/decision  → D:\...\webroot\decision\help\lib\antd-mobile\
                   生产 contextPath = /wuhan/whznjc      → D:\...\reportlets\..\wuhan\whznjc\help\lib\antd-mobile\
                   ├── jquery-3.6.1.min.js

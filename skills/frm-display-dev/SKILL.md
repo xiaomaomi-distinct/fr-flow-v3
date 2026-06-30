@@ -4,7 +4,7 @@ description: |
   帆软移动端展示层开发工程师角色。当用户输入 "/frm-display-dev <项目名>" 时触发。
   负责 antd-mobile + React 移动端页面开发，基于数据层接口契约实现前端展示。
   前置依赖：fr-data-dev 数据层验收通过。
-version: 1.0.0
+version: 1.1.0
 ---
 
 # 帆软加壳方案 - 移动端展示层开发工程师
@@ -54,15 +54,25 @@ dev_task.json:        $FR_PROJECTS_DIR/{project}/docs/dev_task.json
 JSX 源码位置:         $FR_PROJECTS_DIR/{project}/pages/
 输出位置:             $FR_PROJECTS_DIR/{project}/pages/{module}_page.cpt
 部署位置:             $FR_REPORTLETS/{project}/pages/
-静态库 (contextPath 全局共用，不在项目目录下):
-  本机:               D:\...\webroot\decision\help\lib\antd-mobile\  → HTTP /webroot/decision/help/lib/antd-mobile/
-  生产:               D:\...\wuhan\whznjc\help\lib\antd-mobile\      → HTTP /wuhan/whznjc/help/lib/antd-mobile/
-  （骨架 PATH.apiBase 自动推导，所有移动端项目共用一份）
+静态资源策略（骨架 PREAMBLE 统一处理，业务 JSX 不要碰）:
+  默认:               CDN 优先 + FineReport contextPath 本地静态资源兜底
+  CDN:                固定版本公共 CDN（jsDelivr：react@18.3.1 / antd-mobile@5.42.3 等）
+  本地兜底:           <contextPath>/help/lib/antd-mobile/（所有项目共用，不在项目目录）
+  监控变量:           window.__FRM_LIB_SOURCE = 'CDN' | '本地兜底' | 'global'
+  注意:               不要求开发者把业务页面写成本地资源加载；资源加载只在 base_cpt_page_mobile.cpt 骨架内维护
 ```
 
 ### 帆软移动端环境全局变量
 
-**重要：移动端骨架在 afterload 内动态加载库**，不依赖 jsImportList。原因：帆软移动 SPA `/url/mobile#/report?nodePath=...` **完全不读 jsImportList**，必须由骨架自己加载。
+**重要：移动端骨架在 afterload 内动态加载库，默认策略是 CDN 优先 + 本地兜底。** 原因：帆软移动 SPA `/url/mobile#/report?nodePath=...` **完全不读 jsImportList**，必须由骨架自己加载。
+
+加载顺序：
+1. 如果全局变量已经存在（`React` / `ReactDOM` / `antdMobile` / `$`），直接 `bootBusiness()`，`window.__FRM_LIB_SOURCE='global'`
+2. 否则优先尝试 CDN（固定版本，默认 3 秒超时）
+3. CDN 任一文件失败 / 超时 / 全局变量未出现 → 自动切换本地兜底 `<contextPath>/help/lib/antd-mobile/`
+4. 本地仍失败才显示红条和 app-root 错误提示
+
+> **不要误解为"必须走本地静态资源"**：本地静态资源只是兜底和离线保障。生产公网移动端正常情况下会优先走 CDN，从而减少帆软服务器静态资源压力。业务 JSX 不需要也不应该手写任何 CDN / 本地 script URL。
 
 以下全局变量在骨架 `bootBusiness()` 内可用，**业务代码不需要 import**：
 
@@ -118,24 +128,36 @@ ls "$FR_REPORTLETS/{project}/data/{module}_data.cpt"
 请先完成数据层开发（fr-data-dev），验收通过后再触发展示层。
 ```
 
-### 2. 静态库已部署（移动端专属，至关重要）
+### 2. 静态资源策略检查（CDN 优先，本地兜底）
 
-**静态库是 contextPath 全局共用的**，**不在 `{project}/` 目录下**。骨架的 `PATH.apiBase` 会推导出 contextPath（本机 `/webroot/decision`，生产 `/wuhan/whznjc`），然后请求 `<apiBase>/help/lib/antd-mobile/...`。
+**移动端不是必须走本地资源。** `base_cpt_page_mobile.cpt` 骨架的 PREAMBLE 固定段已经实现：
 
-用 HTTP HEAD 探测确认 6 个文件全部可达：
+```text
+CDN（固定版本，默认 3s 超时）
+  ↓ 失败 / 超时 / 全局变量未出现
+FineReport contextPath 本地静态资源兜底（默认 8s 超时）
+  ↓ 失败
+红条横幅 + app-root 错误提示
+```
+
+开发者只需要确认**本地兜底资源必须存在**，因为它是 CDN 不可用、内网、网络抖动时的安全网。CDN 可用性由 frm-qa 在运行时通过 `window.__FRM_LIB_SOURCE` 观察。
+
+本地兜底资源仍部署在 contextPath 全局目录，**不在 `{project}/` 目录下**：
 
 ```bash
 # 本机 contextPath = /webroot/decision；生产环境改成对应 contextPath
 LIB_BASE="${FR_SERVER_URL%/}/webroot/decision/help/lib/antd-mobile"
 for f in jquery-3.6.1.min.js react.min.js react-dom.min.js dayjs.min.js antd-mobile.umd.js style.css; do
     code=$(curl -s -o /dev/null -w "%{http_code}" "$LIB_BASE/$f")
-    [ "$code" = "200" ] && echo "✅ $f" || echo "❌ $f ($code)"
+    [ "$code" = "200" ] && echo "✅ 本地兜底 $f" || echo "❌ 本地兜底 $f ($code)"
 done
 ```
 
-**任一文件缺失（非 200）** → **停止**，提示用户把缺失文件放到 FineReport 的 contextPath 根下的 `help/lib/antd-mobile/` 目录（本机物理路径 `D:\...\webroot\decision\help\lib\antd-mobile\`，生产物理路径 `D:\...\reportlets\..\wuhan\whznjc\help\lib\antd-mobile\`）。骨架 afterload 加载失败会直接顶部红条横幅，页面渲染不出来。
+**本地兜底任一文件缺失（非 200）** → **停止**，提示用户把缺失文件放到 FineReport 的 contextPath 根下的 `help/lib/antd-mobile/` 目录（本机物理路径 `D:\...\webroot\decision\help\lib\antd-mobile\`，生产物理路径 `D:\...\reportlets\..\wuhan\whznjc\help\lib\antd-mobile\`）。
 
-> **不要往 `$FR_REPORTLETS/{project}/help/lib/` 部署一份**：这是早期文档的笔误。库应该放在 contextPath 全局位置，所有移动端项目共用一份。如果项目级目录已经误建，不影响功能（不会被加载），但维护多份会浪费空间且容易版本错乱。
+> CDN 优先逻辑在骨架里，不在 `starter.jsx`。`display_writer.py` 装配时只替换 DEVELOPER ZONE，PREAMBLE 会完整保留，所以所有移动端页面统一继承同一套资源策略。
+>
+> **不要往 `$FR_REPORTLETS/{project}/help/lib/` 部署一份**：库应该放在 contextPath 全局位置，所有移动端项目共用一份。如果项目级目录已经误建，不影响功能（不会被加载），但维护多份会浪费空间且容易版本错乱。
 
 ---
 
@@ -475,7 +497,7 @@ const { chromium, devices } = require('playwright');
 | 工具链生成 | `display_writer.py` exit 0 |
 | 质量门 | `display_checker.py` 无 FAIL（warning 可放过但需说明） |
 | CPT 已部署 | 文件存在于 `$FR_REPORTLETS/{project}/pages/` |
-| 静态库齐全 | contextPath 根下 `help/lib/antd-mobile/` 中 6 个文件 HTTP 200（**全局共用，不在项目目录**） |
+| 静态资源策略 | 骨架 CDN 优先 + contextPath 本地兜底；本地 6 个兜底文件 HTTP 200；运行后可观察 `window.__FRM_LIB_SOURCE` 为 `CDN` / `本地兜底` / `global` |
 | 本机预览通过 | Playwright + iPhone UA + 375×667 viewport 全流程跑通，Console 无 error |
 | **生产真机验证通过** | 企微 Android **和** iOS 至少各 1 次实测 |
 | 红条横幅不出现 | 任何场景下 `#frm-error-banner` 不应被创建 |
@@ -502,7 +524,7 @@ Skill({ skill: "frm-qa", args: "--project {project}" })
 |------|----------|
 | `dev_task.json` 缺少 `pages[]` 或 `platform != mobile` | **停止**，确认任务平台 |
 | 数据层 CPT 未部署 | **停止**，提示先完成 fr-data-dev |
-| 静态库（antd-mobile）未部署 | **停止**，提示部署到 **contextPath 根下的 `help/lib/antd-mobile/`**（**不是项目目录**），所有项目共用一份 |
+| 静态资源加载失败 | **停止**，先看 `window.__FRM_LIB_SOURCE_TRYING` 与失败 URL；CDN 失败会自动本地兜底，本地仍失败才需检查 contextPath 根下 `help/lib/antd-mobile/` 6 个文件 |
 | `display_writer.py` 报错 | **停止**，反馈错误。不要手动改 CPT |
 | esbuild 编译失败 | **停止**，检查 JSX 语法 |
 | 质量门 FAIL | **停止**，按条目修复后重新运行 |

@@ -1,7 +1,7 @@
 {
   "name": "fr-flow-plugin",
-  "description": "帆软加壳前端开发流程技能插件 v3.1。两套并行流水线：PC 端（fr-*，antd + React，桌面浏览器）+ 移动端（frm-*，antd-mobile + React，企业微信 H5）。每套含 PM / 数据层 / 展示层 / QA 四个角色，数据层 fr-data-dev 两端共用。",
-  "version": "3.1.0",
+  "description": "帆软加壳前端开发流程技能插件 v3.1.1。两套并行流水线：PC 端（fr-*，antd + React，桌面浏览器）+ 移动端（frm-*，antd-mobile + React，企业微信 H5）。移动端资源加载采用 CDN 优先 + FineReport 本地兜底，数据层 fr-data-dev 两端共用。",
+  "version": "3.1.1",
   "author": {
     "name": "移动化开发中心"
   },

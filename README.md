@@ -38,10 +38,11 @@ bash scripts/sync_env.sh
 # 将 foundation/public_cpt/ 下文件复制到帆软 reportlets 目录
 # 详见 docs/PUBLIC_CPT.md
 
-# 5. （移动端）部署 antd-mobile 静态库
+# 5. （移动端）部署本地兜底静态库
+# 移动骨架默认 CDN 优先（固定版本 jsDelivr）+ FineReport 本地兜底。
 # 把 jquery / react / react-dom / dayjs / antd-mobile.umd.js / style.css
 # 放到 FineReport contextPath 根目录下的 help/lib/antd-mobile/
-# （所有项目共用一份，骨架的 PATH.apiBase 自动推导加载）
+# （所有项目共用一份，CDN 失败/超时时自动 fallback，本地兜底必须保留）
 # 详见 docs/ENV_SETUP.md 移动端章节
 
 # 6. 安装 api_tester 依赖
@@ -92,7 +93,7 @@ cd foundation/tools/api_tester && npm install && npx playwright install chromium
 | 端 | UI 库 | 全局变量 | 骨架模板 | 加载方式 |
 |---|---|---|---|---|
 | PC | antd 5 | `antd` | `base_cpt_page.cpt` | 帆软 jsImportList 自动注入 |
-| 移动 | antd-mobile 5 | `antdMobile` | `base_cpt_page_mobile.cpt` | afterload 内动态加载（移动 SPA 不读 jsImportList） |
+| 移动 | antd-mobile 5 | `antdMobile` | `base_cpt_page_mobile.cpt` | afterload 动态加载：**CDN 优先 + FineReport contextPath 本地兜底** |
 
 ## 目录结构
 
@@ -186,7 +187,7 @@ fr-flow-v3/
 | 列表项删除 | 右侧操作列 | `SwipeAction` 左滑（推荐，更符合移动规范） |
 | 字号 | 12-14px | 14-16px 主体，最小 12px 辅助 |
 | URL 路由 | `/decision/view/report?reportlet=...&op=write` | `/decision/url/mobile#/report?nodePath=...` |
-| 库加载 | 帆软 jsImportList 自动注入 | 骨架 afterload 主动动态加载 |
+| 库加载 | 帆软 jsImportList 自动注入 | 骨架 afterload 主动动态加载：CDN 优先 + 本地兜底 |
 | 测试 | 桌面 Chromium | Playwright iPhone 13 + 企微 UA + 必须真机验证 |
 
 更多差异详见 `shared/KNOWLEDGE/ANTD_MOBILE_GUIDE.md` 与 `shared/KNOWLEDGE/MOBILE_SPECIFIC.md`。
