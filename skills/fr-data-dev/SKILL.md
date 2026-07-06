@@ -356,9 +356,74 @@ node api_verify.spec.js   --cpt "{project}/data/{module}_data.cpt"   --dataset '
 
 ---
 
+## 工作区自清（验收通过后强制执行）
+
+数据层验收通过、触发展示层之前，**清理本角色在编码过程中产生的临时文件**，只留下交付物。
+
+### 清理范围
+
+删除以下文件（如存在于项目目录或 `$FR_PROJECTS_DIR/{project}/` 工作区下）：
+
+| 类别 | 匹配模式 | 说明 |
+|------|----------|------|
+| 调试副本 | `*_check*.js`、`*_check*.jsx`、`*_check*.py` | 编码期临时校验脚本 |
+| 迭代副本 | `gen_*.js`、`gen_*.jsx`、`skel_*.js`、`skel_*.jsx` | 多版本骨架/生成尝试 |
+| 探针副本 | `probe_*.js`、`probe_*.jsx` | 一次性探针脚本 |
+| 后缀副本 | `*.bak`、`*.bak.*`、`*_old.*`、`*_old2.*`、`*_final*.js`、`*_final*.jsx` | 手动备份/定稿前副本 |
+| 截图残渣 | `*_check.png`、`*_portal*.png`、`_picker_*.png` | 调试截图 |
+
+### 保留物（不要删）
+
+| 路径 | 说明 |
+|------|------|
+| `$FR_PROJECTS_DIR/{project}/data/` | 数据层 CPT 交付物 |
+| `$FR_PROJECTS_DIR/{project}/sql/` | 建表/存储过程脚本（交付物） |
+| `$FR_PROJECTS_DIR/{project}/docs/dev_task.json` | PM 产出，全流程依赖 |
+| `$FR_WORKSPACE/**`、`$FR_REPORTLETS/**` | 技能包与帆软部署目录，只读 |
+
+### 执行
+
+```bash
+# 在 $FR_PROJECTS_DIR/{project}/ 下扫描（不递归到 data/ sql/ docs/ 交付目录）
+cd "$FR_PROJECTS_DIR/{project}"
+
+# 列出待删清单（先看后删，避免误删）
+find . -maxdepth 2 \( \
+  -name '*_check*.js' -o -name '*_check*.jsx' -o -name '*_check*.py' \
+  -o -name 'gen_*.js' -o -name 'gen_*.jsx' \
+  -o -name 'skel_*.js' -o -name 'skel_*.jsx' \
+  -o -name 'probe_*.js' -o -name 'probe_*.jsx' \
+  -o -name '*.bak' -o -name '*.bak.*' \
+  -o -name '*_old.*' -o -name '*_old2.*' \
+  -o -name '*_final*.js' -o -name '*_final*.jsx' \
+  -o -name '*_check.png' -o -name '*_portal*.png' -o -name '_picker_*.png' \
+\) -not -path './data/*' -not -path './sql/*' -not -path './docs/*'
+
+# 确认清单无误后删除（把上面的 find 替换为 delete）
+find . -maxdepth 2 \( \
+  -name '*_check*.js' -o -name '*_check*.jsx' -o -name '*_check*.py' \
+  -o -name 'gen_*.js' -o -name 'gen_*.jsx' \
+  -o -name 'skel_*.js' -o -name 'skel_*.jsx' \
+  -o -name 'probe_*.js' -o -name 'probe_*.jsx' \
+  -o -name '*.bak' -o -name '*.bak.*' \
+  -o -name '*_old.*' -o -name '*_old2.*' \
+  -o -name '*_final*.js' -o -name '*_final*.jsx' \
+  -o -name '*_check.png' -o -name '*_portal*.png' -o -name '_picker_*.png' \
+\) -not -path './data/*' -not -path './sql/*' -not -path './docs/*' -delete
+```
+
+### 边界与冲突
+
+- **只删本角色产物**：上一步 PM、下一步 display-dev 的文件不在 data-dev 清理范围。若不确定某个文件归属，**停下来问用户**，不要猜。
+- **共享工作区**（`E:/fr-projects/` 根目录）的临时文件不在此处清理——那是跨项目堆积，由 QA 验收时统一处理（见 fr-qa）。
+- **dev_task.json 不动**：哪怕你以为它是"临时"的，它是 PM 的合约，全流程依赖。
+- 删除前若发现某文件被其他角色引用，**停下来报错**，不要强删。
+
+---
+
 ## 触发展示层
 
-全部验收通过后：
+全部验收通过、工作区自清完成后：
 
 ```javascript
 Skill({ skill: "fr-display-dev", args: "--project {project}" })

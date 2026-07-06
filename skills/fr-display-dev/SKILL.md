@@ -507,9 +507,78 @@ npx playwright codegen "http://localhost:18080/webroot/decision/view/report?op=w
 
 ---
 
+## 工作区自清（验收通过后强制执行）
+
+展示层验收通过、触发 QA 之前，**清理本角色在编码过程中产生的临时文件**，只留下交付物。
+
+### 清理范围
+
+删除以下文件（如存在于项目目录或 `$FR_PROJECTS_DIR/{project}/` 工作区下）：
+
+| 类别 | 匹配模式 | 说明 |
+|------|----------|------|
+| 调试副本 | `*_check*.js`、`*_check*.jsx`、`*_check*.py` | 编码期临时校验脚本 |
+| 迭代副本 | `gen_*.js`、`gen_*.jsx`、`skel_*.js`、`skel_*.jsx` | 多版本骨架/生成尝试 |
+| 探针副本 | `probe_*.js`、`probe_*.jsx` | 一次性探针脚本 |
+| 后缀副本 | `*.bak`、`*.bak.*`、`*_old.*`、`*_old2.*`、`*_final*.js`、`*_final*.jsx` | 手动备份/定稿前副本 |
+| 截图残渣 | `*_check.png`、`*_portal*.png`、`_picker_*.png` | 调试截图 |
+
+### 保留物（不要删）
+
+| 路径 | 说明 |
+|------|------|
+| `$FR_PROJECTS_DIR/{project}/pages/` | JSX 源码 + CPT 交付物（含 `.jsx` 和 `.cpt`） |
+| `$FR_PROJECTS_DIR/{project}/test/` | Playwright 验证脚本（回归测试用，交付物） |
+| `$FR_PROJECTS_DIR/{project}/docs/dev_task.json` | PM 产出，全流程依赖 |
+| `$FR_PROJECTS_DIR/{project}/data/`、`sql/` | 数据层交付物（不是本角色产物，但也不删） |
+| `$FR_WORKSPACE/**`、`$FR_REPORTLETS/**` | 技能包与帆软部署目录，只读 |
+
+> `pages/` 下的 `.jsx` 文件即使匹配到 `*_old.*` 之类模式也不要删——那是交付的源码，不是副本。清理只针对 `pages/` 之外的临时文件。
+
+### 执行
+
+```bash
+cd "$FR_PROJECTS_DIR/{project}"
+
+# 列出待删清单（先看后删，避免误删）
+find . -maxdepth 2 \( \
+  -name '*_check*.js' -o -name '*_check*.jsx' -o -name '*_check*.py' \
+  -o -name 'gen_*.js' -o -name 'gen_*.jsx' \
+  -o -name 'skel_*.js' -o -name 'skel_*.jsx' \
+  -o -name 'probe_*.js' -o -name 'probe_*.jsx' \
+  -o -name '*.bak' -o -name '*.bak.*' \
+  -o -name '*_old.*' -o -name '*_old2.*' \
+  -o -name '*_final*.js' -o -name '*_final*.jsx' \
+  -o -name '*_check.png' -o -name '*_portal*.png' -o -name '_picker_*.png' \
+\) -not -path './pages/*' -not -path './test/*' \
+  -not -path './data/*' -not -path './sql/*' -not -path './docs/*'
+
+# 确认清单无误后删除（把上面的 find 替换为 delete）
+find . -maxdepth 2 \( \
+  -name '*_check*.js' -o -name '*_check*.jsx' -o -name '*_check*.py' \
+  -o -name 'gen_*.js' -o -name 'gen_*.jsx' \
+  -o -name 'skel_*.js' -o -name 'skel_*.jsx' \
+  -o -name 'probe_*.js' -o -name 'probe_*.jsx' \
+  -o -name '*.bak' -o -name '*.bak.*' \
+  -o -name '*_old.*' -o -name '*_old2.*' \
+  -o -name '*_final*.js' -o -name '*_final*.jsx' \
+  -o -name '*_check.png' -o -name '*_portal*.png' -o -name '_picker_*.png' \
+\) -not -path './pages/*' -not -path './test/*' \
+  -not -path './data/*' -not -path './sql/*' -not -path './docs/*' -delete
+```
+
+### 边界与冲突
+
+- **只删本角色产物**：数据层 `data/`、`sql/` 不是本角色产物，但不删——它们是 data-dev 的交付物。`docs/dev_task.json` 是 PM 合约。
+- **共享工作区**（`E:/fr-projects/` 根目录）的临时文件不在此处清理——那是跨项目堆积，由 QA 验收时统一处理（见 fr-qa）。
+- **pages/ 下的 .jsx 不动**：交付源码，不是副本；哪怕名字像 `xxx_old.jsx` 也保留。
+- 删除前若发现某文件被其他角色引用，**停下来报错**，不要强删。
+
+---
+
 ## 触发展示层自测完成
 
-全部验收通过后，如果 QA 技能就绪，可触发测试工程师：
+全部验收通过、工作区自清完成后，如果 QA 技能就绪，可触发测试工程师：
 
 ```javascript
 Skill({ skill: "fr-qa", args: "--project {project}" })
