@@ -75,10 +75,11 @@ qa_task schema:     $FR_WORKSPACE/schemas/qa_task.schema.json
 **移动展示层骨架**:  $FR_WORKSPACE/foundation/templates/base_cpt_page_mobile.cpt
 **移动 starter**:    $FR_WORKSPACE/foundation/scaffolds/mobile/starter.jsx
 **移动资源策略**:    CDN 优先 + <contextPath>/help/lib/antd-mobile/ 本地兜底（骨架 PREAMBLE 统一处理）
-                    CDN: jsDelivr 固定版本（react@18.3.1 / antd-mobile@5.42.3 等，默认 3s 超时）
+                    CDN: jsDelivr 固定版本（react@18.3.1 / antd-mobile@5.42.3 等，默认 6s 超时）
                     本地兜底: 本机 /webroot/decision/help/lib/antd-mobile/；生产 /wuhan/whznjc/help/lib/antd-mobile/
-                    监控变量: window.__FRM_LIB_SOURCE = 'CDN' | '本地兜底' | 'global'
+                    监控变量: libSource（闭包局部变量，非 window）= 'CDN' | '本地兜底' | 'global'
                     所有移动端项目共用，不是项目级资源
+                    注意: 移动端 SPA 禁止 window.__ 自定义属性赋值（会卡死），见 MOBILE_SPECIFIC.md 8.9
 ```
 
 ---

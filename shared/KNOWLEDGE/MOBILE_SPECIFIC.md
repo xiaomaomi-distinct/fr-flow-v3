@@ -702,6 +702,61 @@ wx.scanQRCode({ success: callback });
 <List>...</List>
 ```
 
+### 8.9 window 自定义属性赋值（移动端 SPA 致命坑）
+
+**这是真实生产事故总结的坑，务必牢记。**
+
+帆软移动端 SPA（`/url/mobile#/report?nodePath=...`）和 PC 端（`op=write`）运行环境完全不同：
+- PC 端：每个 CPT 在独立 `window` 里执行，`window.xxx = ...` 自由赋值
+- **移动端 SPA**：所有报表在**同一个 `window`** 里通过路由切换加载，给 `window` 上的自定义属性（尤其 `__` 前缀）赋值会**抛 TypeError 或挂起主线程**，且 `try/catch` 救不回来（异常发生在赋值语句本身，不被外层 catch 捕获）
+
+```javascript
+// ❌ 移动端 SPA 会卡死/抛错
+window.__FRM_DIAG = [];
+window.__FRM_LIB_SOURCE = 'CDN';
+window.__MY_FLAG = true;
+
+// ✅ 用闭包局部变量（PREAMBLE 整个在 IIFE 里，局部变量全作用域共享）
+var FRM_DIAG = [];
+var libSource = null;
+var myFlag = true;
+```
+
+**排查方法**：如果移动端页面卡在某个加载阶段，PC 端正常，用 `document.title = 'STEP-X'` 同步打点（企微顶部标题栏可见），精确定位卡在哪一行。
+
+**已修复**：骨架 `base_cpt_page_mobile.cpt` 的 PREAMBLE 已全部改用局部变量，业务 JSX 不需要关心。但**业务代码里也不要写 `window.__XXX = ...`**，用闭包变量或 DOM data 属性代替。
+
+### 8.10 FR.remoteEvaluate 二次调用挂起
+
+`FR.remoteEvaluate("=servletURL")` 在移动端 SPA 里**只能调用一次**（PATH 计算时的 IIFE 里）。二次调用（如诊断日志里再调一次）可能挂起主线程。
+
+```javascript
+// ❌ PATH 已调用过，diag 里再调会挂起
+diag('servletURL=' + FR.remoteEvaluate("=servletURL"));
+
+// ✅ PATH 计算时缓存结果，后续直接读属性
+var PATH = {
+    apiBase: (function() {
+        var servletURL = FR.remoteEvaluate("=servletURL");  // 唯一一次调用
+        return '/' + servletURL.split('/')[1] + '/' + servletURL.split('/')[2];
+    })()
+};
+// 后续用 PATH.apiBase，不再调 FR.remoteEvaluate
+```
+
+### 8.11 CSS :has() 选择器兼容性
+
+企微 Android XWEB 内核可能不支持 `:has()` 伪类。CSS 规则里含 `:has()` 会导致**整条规则被丢弃**（不是降级，是整条失效）。
+
+```css
+/* ❌ XWEB 不支持 :has()，整条 display:none 规则失效，帆软原生 UI 没被隐藏 */
+body>*:not(#app-root):not(:has([class*="adm-"])){ display:none!important; }
+
+/* ✅ 用 class 标记 + JS MutationObserver 兜底 */
+body>*:not(#app-root):not([class*="adm-"]):not(.frm-adm-host){ display:none!important; }
+/* JS 监听 adm- 元素出现，给父容器加 frm-adm-host class */
+```
+
 ---
 
 ## 九、相关文档

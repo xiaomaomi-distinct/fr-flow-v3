@@ -63,17 +63,15 @@
         }
     };
 
-    // 3. hideStyle —— 通杀模式 + Portal 白名单（精准版）
-    //    策略：body > * 默认全部隐藏，但放出三类元素：
-    //      a. #app-root：应用主体
-    //      b. 自身带 adm- 类的元素（如 Popup、Picker 直接挂 .adm-popup）
-    //      c. 子孙包含 adm- 元素的容器（如 Toast 在无 class 的 wrapper div 内）
-    //    z-index：#app-root 用 100（高于 fr 但远低于 antd-mobile Portal 默认 1000）
+    // 3. hideStyle —— 通杀模式 + Portal 白名单
+    //    策略：body > * 默认全部隐藏，但放出 #app-root 和带 adm- 类的元素
+    //    注意：不用 :has()（企微 Android XWEB 内核可能不支持，会导致整条规则丢弃）
+    //    改用 JS 兜底：adm- 元素的父容器由 JS 标记 class 后再放出
     var hideStyle = document.createElement('style');
     hideStyle.innerHTML =
         'html,body{margin:0!important;padding:0!important;background:#f5f5f5!important;' +
             '-webkit-text-size-adjust:100%;}' +
-        'body>*:not(#app-root):not([class*="adm-"]):not(:has([class*="adm-"])){' +
+        'body>*:not(#app-root):not([class*="adm-"]):not(.frm-adm-host){' +
             'display:none!important;}' +
         'body>#app-root{display:block!important;position:fixed!important;' +
             'top:0!important;left:0!important;right:0!important;bottom:0!important;' +
@@ -83,6 +81,24 @@
             'padding-bottom:env(safe-area-inset-bottom);' +
             'box-sizing:border-box;}';
     document.head.appendChild(hideStyle);
+
+    // :has() 兜底：用 MutationObserver 监听 adm- 元素，给其父容器加 class 让 CSS 放出
+    // 这样即使 :has() 不支持，antd-mobile Portal（Toast/Dialog 等）也能正常显示
+    try {
+        var admObserver = new MutationObserver(function(mutations) {
+            var admEls = document.querySelectorAll('[class*="adm-"]');
+            for (var i = 0; i < admEls.length; i++) {
+                var el = admEls[i];
+                if (el.closest && el.closest('#app-root')) continue;
+                if (!el.classList.contains('frm-adm-host')) el.classList.add('frm-adm-host');
+                var parent = el.parentElement;
+                if (parent && parent !== document.body && !parent.classList.contains('frm-adm-host')) {
+                    parent.classList.add('frm-adm-host');
+                }
+            }
+        });
+        admObserver.observe(document.body, { childList: true, subtree: true });
+    } catch(e) {}
 
     // 4. 创建 #app-root，初始显示 loading 占位
     var appRoot = document.createElement('div');
@@ -110,19 +126,26 @@
             ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?');
     });
 
-    // 6. 动态加载组件库（PC/移动通用：检测全局是否已注入，没注入就加载）
-    //    策略：CDN 优先 + FineReport contextPath 本地静态资源兜底。
+    // 6. 动态加载组件库（移动端：CDN 优先 + 本地兜底，并行加载，XHR 兜事件丢失）
+    //    设计要点（针对企微 XWEB/WKWebView 加载卡死问题）：
+    //      a. CDN 优先：jsDelivr 固定版本，本地兜底同源资源作 fallback
+    //      b. 并行加载：CSS + 5 个 script 同时发起，总耗时 = max(单文件) 而非 sum
+    //      c. CDN 脚本用 XHR + (0,eval)：XHR 有内核级 ontimeout，比 <script> onload 可靠
+    //         本地脚本仍用 <script src>：同源事件可靠，UMD 全局挂载正确
+    //      d. 全局看门狗 bootGuardDog：15s 后若 libSource 未设置，强制显示诊断面板
+    //      e. bootBusiness 包 try/catch：React 渲染抛错也显示诊断面板，不留白屏
+    //      f. 诊断面板（diag/showDiagPanel）：纯原生 JS，不依赖任何库加载成功
+    //      g. 禁止 window.__ 自定义属性赋值（移动端 SPA 会卡死），全用闭包局部变量
     //    注意：这是骨架 PREAMBLE 固定段，必须在 bootBusiness() 之前完成；不要放到 starter.jsx。
     var LOCAL_LIB_BASE = PATH.apiBase + '/help/lib/antd-mobile/';
 
     var RESOURCE_CONFIG = {
-        preferCdn: true,
+        preferCdn: true,            // CDN 优先（jsDelivr 固定版本）；本地兜底作 fallback
         fallbackLocal: true,
-        cdnTimeoutMs: 3000,
-        localTimeoutMs: 8000,
+        cdnTimeoutMs: 6000,         // CDN 并行总时长上限 6s
+        localTimeoutMs: 4000,       // 本地同源应很快，4s 足够
         cdnBase: 'https://cdn.jsdelivr.net/npm/',
-        // 公共 CDN 如需上生产，建议后续补 SRI；当前优先使用固定版本 + 本地兜底。
-        enableSri: false
+        guardDogMs: 15000           // 全局看门狗：15s 强制显示诊断面板
     };
 
     var CDN_SOURCE = {
@@ -158,25 +181,126 @@
         (typeof window.$ !== 'function' && typeof window.jQuery !== 'function')
     );
 
+    // 诊断日志（定位企微加载卡住问题；纯原生 JS，不依赖任何库）
+    // 重要：移动端 SPA（/url/mobile）环境下 window 自定义属性赋值会抛错/挂起，
+    //       全部用闭包局部变量，不要写 window.__XXX
+    var FRM_DIAG = [];
+    var libSource = null;        // 替代 window.__FRM_LIB_SOURCE
+    var libSourceTrying = null;  // 替代 window.__FRM_LIB_SOURCE_TRYING
+    function diag(msg) {
+        try {
+            var t = new Date();
+            var ts = ('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2)+':'+('0'+t.getSeconds()).slice(-2)+'.'+('00'+t.getMilliseconds()).slice(-3);
+            var line = '['+ts+'] '+msg;
+            FRM_DIAG.push(line);
+            // 同步刷新诊断面板（若已显示）
+            var el = document.getElementById('_frm_diag');
+            if (el) { el.textContent = FRM_DIAG.join('\n'); el.scrollTop = el.scrollHeight; }
+            // 备份到 title，万一面板看不到，截图顶部也有
+            document.title = 'DIAG:' + FRM_DIAG.slice(-2).join(' | ');
+        } catch(e) {}
+    }
+    try { diag('PREAMBLE OK; apiBase='+PATH.apiBase+'; LOCAL='+LOCAL_LIB_BASE+'; NEED_LOAD='+NEED_LOAD+'; preferCdn='+RESOURCE_CONFIG.preferCdn); } catch(e) {}
+    try { diag('UA='+navigator.userAgent.substring(0,100)); } catch(e) {}
+    // 注意：不在这里调用 FR.remoteEvaluate（PATH 计算时已调用过，移动端 SPA 二次调用可能挂起）
+    try { diag('location.href='+location.href.substring(0,120)); } catch(e) {}
+    try { diag('globals: React='+typeof window.React+' ReactDOM='+typeof window.ReactDOM+' antdMobile='+typeof window.antdMobile+' $='+typeof window.$+' dayjs='+typeof window.dayjs); } catch(e) {}
+
+    // ===== 企微前置诊断：同步显示关键状态到 #app-root，即使后续加载卡死也能看到 =====
+    try {
+        var _probeInfo = [
+            '=== 企微加载诊断（同步快照）===',
+            '时间: ' + new Date().toLocaleString(),
+            'UA: ' + (navigator.userAgent || '').substring(0, 100),
+            'location: ' + location.href.substring(0, 100),
+            'apiBase: ' + PATH.apiBase,
+            'LOCAL_LIB_BASE: ' + LOCAL_LIB_BASE,
+            'NEED_LOAD: ' + NEED_LOAD,
+            'preferCdn: ' + RESOURCE_CONFIG.preferCdn,
+            '全局变量:',
+            '  React=' + typeof window.React,
+            '  ReactDOM=' + typeof window.ReactDOM,
+            '  antdMobile=' + typeof window.antdMobile,
+            '  $=' + typeof window.$,
+            '  jQuery=' + typeof window.jQuery,
+            '  dayjs=' + typeof window.dayjs,
+            '',
+            '如果停在这里：说明 <script>/<link> 加载卡死',
+            '如果看到"本地兜底 全部完成"：说明加载成功，是 bootBusiness 渲染失败',
+            '请长按本框文字复制回传'
+        ].join('\n');
+        var _probeBox = document.getElementById('app-root');
+        if (_probeBox) {
+            _probeBox.innerHTML =
+                '<div style="padding:12px;font-size:13px;color:#333;font-family:monospace;">' +
+                '<div style="margin-bottom:8px;color:#1677ff;font-weight:bold;">⏳ 正在加载组件库（诊断模式）...</div>' +
+                '<div id="_frm_diag" style="font-size:12px;color:#333;background:#fffbe6;border:1px solid #ffe58f;' +
+                'padding:8px;border-radius:4px;max-height:50vh;overflow:auto;word-break:break-all;' +
+                'line-height:1.6;white-space:pre-wrap;-webkit-user-select:text;user-select:text;">' +
+                _probeInfo + '</div>' +
+                '<div style="margin-top:8px;font-size:11px;color:#999;">长按上方黄框内文字可复制</div>' +
+                '</div>';
+        }
+        FRM_DIAG = FRM_DIAG.concat(_probeInfo.split('\n'));
+    } catch(e) {}
+
     function setLoadingText(text) {
         var box = document.getElementById('app-root');
         if (box) {
+            // 保留诊断面板（#_frm_diag），只更新顶部 loading 文案，避免覆盖诊断信息
+            var existingDiag = document.getElementById('_frm_diag');
+            var diagContent = existingDiag ? existingDiag.textContent : FRM_DIAG.join('\n');
             box.innerHTML =
-                '<div style="text-align:center;padding:80px 20px;color:#888;font-size:14px;">' +
+                '<div style="padding:12px;font-size:13px;color:#333;font-family:monospace;">' +
+                '<div style="text-align:center;padding:20px 0;color:#888;font-size:14px;">' +
                 '<div style="display:inline-block;width:24px;height:24px;border:2px solid #ccc;' +
-                'border-top-color:#1677ff;border-radius:50%;animation:_frm_spin 0.8s linear infinite;">' +
-                '</div><div style="margin-top:12px;">' + text + '</div></div>' +
+                'border-top-color:#1677ff;border-radius:50%;animation:_frm_spin 0.8s linear infinite;vertical-align:middle;"></div>' +
+                '<div style="margin-top:8px;">' + text + '</div></div>' +
+                '<div id="_frm_diag" style="font-size:12px;color:#333;background:#fffbe6;border:1px solid #ffe58f;' +
+                'padding:8px;border-radius:4px;max-height:50vh;overflow:auto;word-break:break-all;' +
+                'line-height:1.6;white-space:pre-wrap;-webkit-user-select:text;user-select:text;">' +
+                diagContent + '</div>' +
+                '<div style="margin-top:8px;font-size:11px;color:#999;">长按上方黄框内文字可复制</div>' +
+                '</div>' +
                 '<style>@keyframes _frm_spin{to{transform:rotate(360deg);}}</style>';
         }
     }
 
+    // 诊断面板（纯原生 JS，黄框可复制；看门狗 / 加载失败 / 渲染失败 都用它）
+    function showDiagPanel(headTitle, extra) {
+        var box = document.getElementById('app-root') || appRoot;
+        if (!box) return;
+        var globals = 'React=' + typeof window.React + ', ReactDOM=' + typeof window.ReactDOM +
+            ', antdMobile=' + typeof window.antdMobile + ', $=' + typeof window.$ +
+            ', LIB_SOURCE=' + libSource + ', TRYING=' + libSourceTrying;
+        box.innerHTML =
+            '<div style="padding:16px;font-size:15px;color:#333;font-family:monospace;">' +
+            '<div style="margin-bottom:12px;color:#ff4d4f;font-weight:bold;">' + headTitle + '</div>' +
+            (extra ? '<div style="margin-bottom:10px;color:#ff4d4f;font-size:13px;word-break:break-all;">' + extra + '</div>' : '') +
+            '<div style="margin-bottom:6px;font-size:12px;color:#666;">全局状态：' + globals + '</div>' +
+            '<div id="_frm_diag" style="font-size:13px;color:#333;background:#fffbe6;border:1px solid #ffe58f;' +
+            'padding:10px;border-radius:4px;max-height:50vh;overflow:auto;word-break:break-all;' +
+            'line-height:1.8;white-space:pre-wrap;-webkit-user-select:text;user-select:text;">' +
+            FRM_DIAG.join('\n') + '</div>' +
+            '<div style="margin-top:12px;font-size:12px;color:#999;">长按上方黄框内文字可复制</div>' +
+            '</div>';
+        // 滚到底
+        var el = document.getElementById('_frm_diag');
+        if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    // ===== 加载原语 =====
+
+    // CSS：用 <link>（CSS 不需要执行，只需加载到样式表，onload/onerror + timer 兜底）
     function loadCSS(url, timeoutMs, onComplete, onError) {
+        diag('▶ loadCSS: ' + url.substring(0, 80));
         var done = false;
         var l = document.createElement('link');
         var timer = setTimeout(function() {
             if (done) return;
             done = true;
             try { if (l.parentNode) l.parentNode.removeChild(l); } catch (e) {}
+            diag('✗ loadCSS 超时(' + timeoutMs + 'ms): ' + url.substring(0, 80));
             onError(url + ' (timeout)');
         }, timeoutMs);
         l.rel = 'stylesheet';
@@ -185,6 +309,7 @@
             if (done) return;
             done = true;
             clearTimeout(timer);
+            diag('✓ loadCSS 完成: ' + url.substring(0, 80));
             onComplete();
         };
         l.onerror = function() {
@@ -192,19 +317,23 @@
             done = true;
             clearTimeout(timer);
             try { if (l.parentNode) l.parentNode.removeChild(l); } catch (e) {}
+            diag('✗ loadCSS onerror: ' + url.substring(0, 80));
             onError(url);
         };
         document.head.appendChild(l);
     }
 
-    function loadOneScript(item, timeoutMs, onComplete, onError) {
-        if (item.check && item.check()) { onComplete(); return; }
+    // 同源 script：<script src>（同源 onload/onerror 可靠，UMD 全局挂载正确）
+    function loadScriptLocal(item, timeoutMs, onComplete, onError) {
+        if (item.check && item.check()) { diag('▪ ' + item.name + ' 已存在,跳过'); onComplete(); return; }
+        diag('▶ loadScript(src): ' + item.name + ' ' + item.url.substring(0, 70));
         var done = false;
         var s = document.createElement('script');
         var timer = setTimeout(function() {
             if (done) return;
             done = true;
             try { if (s.parentNode) s.parentNode.removeChild(s); } catch (e) {}
+            diag('✗ ' + item.name + ' 超时(' + timeoutMs + 'ms)');
             onError(item.url + ' (timeout)');
         }, timeoutMs);
         s.src = item.url;
@@ -214,9 +343,11 @@
             done = true;
             clearTimeout(timer);
             if (item.check && !item.check()) {
+                diag('✗ ' + item.name + ' 加载完但全局变量不存在');
                 onError(item.url + ' (global missing: ' + item.name + ')');
                 return;
             }
+            diag('✓ ' + item.name + ' 加载完成');
             onComplete();
         };
         s.onerror = function() {
@@ -224,45 +355,123 @@
             done = true;
             clearTimeout(timer);
             try { if (s.parentNode) s.parentNode.removeChild(s); } catch (e) {}
+            diag('✗ ' + item.name + ' onerror');
             onError(item.url);
         };
         document.head.appendChild(s);
     }
 
-    function loadScripts(items, timeoutMs, onComplete, onError) {
-        var i = 0;
-        function next() {
-            if (i >= items.length) { onComplete(); return; }
-            loadOneScript(items[i++], timeoutMs, next, onError);
+    // 跨域 script（CDN）：XHR + (0,eval)。XHR 有内核级 ontimeout，比 <script> onload 可靠
+    function loadScriptXHR(item, timeoutMs, onComplete, onError) {
+        if (item.check && item.check()) { diag('▪ ' + item.name + ' 已存在,跳过'); onComplete(); return; }
+        diag('▶ loadScript(XHR): ' + item.name + ' ' + item.url.substring(0, 70));
+        var done = false;
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', item.url, true);
+            xhr.timeout = timeoutMs;          // 内核级超时，主线程阻塞也能触发
+            xhr.onreadystatechange = function() {
+                if (done) return;
+                if (xhr.readyState !== 4) return;
+                done = true;
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    try {
+                        // (0,eval) 间接调用 → 全局作用域，UMD 包正确挂载 window 全局变量
+                        (0, eval)(xhr.responseText);
+                    } catch (e) {
+                        diag('✗ ' + item.name + ' eval 失败: ' + e.message);
+                        onError(item.url + ' (eval error: ' + e.message + ')');
+                        return;
+                    }
+                    if (item.check && !item.check()) {
+                        diag('✗ ' + item.name + ' XHR完成但全局变量不存在');
+                        onError(item.url + ' (global missing: ' + item.name + ')');
+                        return;
+                    }
+                    diag('✓ ' + item.name + ' XHR+eval 完成');
+                    onComplete();
+                } else {
+                    diag('✗ ' + item.name + ' XHR HTTP ' + xhr.status);
+                    onError(item.url + ' (HTTP ' + xhr.status + ')');
+                }
+            };
+            xhr.ontimeout = function() {
+                if (done) return;
+                done = true;
+                diag('✗ ' + item.name + ' XHR 超时(' + timeoutMs + 'ms)');
+                onError(item.url + ' (xhr timeout)');
+            };
+            xhr.onerror = function() {
+                if (done) return;
+                done = true;
+                diag('✗ ' + item.name + ' XHR onerror');
+                onError(item.url + ' (xhr error)');
+            };
+            xhr.send();
+        } catch (e) {
+            if (done) return;
+            done = true;
+            diag('✗ ' + item.name + ' XHR 构造失败: ' + e.message);
+            onError(item.url + ' (xhr construct: ' + e.message + ')');
         }
-        next();
     }
 
-    function loadSource(source, onComplete, onError) {
-        window.__FRM_LIB_SOURCE_TRYING = source.name;
+    // 并行加载一个 source 的全部资源（CSS + 5 script 同时发起）
+    // 任一失败立即 onError（不等其他），全部成功才 onComplete
+    function loadSourceParallel(source, onComplete, onError) {
+        libSourceTrying = source.name;
         setLoadingText('正在加载组件库（' + source.name + '）...');
-        loadCSS(source.css, source.timeoutMs, function() {
-            loadScripts(source.scripts, source.timeoutMs, function() {
-                window.__FRM_LIB_SOURCE = source.name;
+        diag('=== loadSource 并行: ' + source.name + ' ===');
+
+        var total = 1 + source.scripts.length;   // CSS + scripts
+        var remaining = total;
+        var failed = false;
+        // CDN 跨域用 XHR；本地同源用 <script src>
+        var useXHR = (source.name === 'CDN');
+
+        function checkAllDone() {
+            if (failed) return;
+            if (remaining === 0) {
+                libSource = source.name;
+                diag('=== ' + source.name + ' 全部完成 ===');
                 onComplete();
-            }, function(failedUrl) {
-                onError(source.name, failedUrl);
-            });
+            }
+        }
+
+        // CSS
+        loadCSS(source.css, source.timeoutMs, function() {
+            remaining--; checkAllDone();
         }, function(failedUrl) {
+            if (failed) return;
+            failed = true;
+            diag('✗ ' + source.name + ' CSS 失败,中止');
             onError(source.name, failedUrl);
         });
+
+        // Scripts（并行）
+        for (var i = 0; i < source.scripts.length; i++) {
+            (function(item) {
+                var loader = useXHR ? loadScriptXHR : loadScriptLocal;
+                loader(item, source.timeoutMs, function() {
+                    remaining--; checkAllDone();
+                }, function(failedUrl) {
+                    if (failed) return;
+                    failed = true;
+                    diag('✗ ' + source.name + ' 脚本失败: ' + item.name + ',中止');
+                    onError(source.name, failedUrl);
+                });
+            })(source.scripts[i]);
+        }
     }
 
-    function showLoadFailed(sourceName, failedUrl) {
-        appRoot.innerHTML =
-            '<div style="text-align:center;padding:60px 20px;color:#ff4d4f;">' +
-            '<div style="font-size:16px;margin-bottom:12px;">⚠ 组件库加载失败</div>' +
-            '<div style="font-size:13px;margin-bottom:8px;">来源：' + sourceName + '</div>' +
-            '<div style="font-size:12px;word-break:break-all;color:#666;">' + failedUrl + '</div>' +
-            '<div style="font-size:11px;color:#888;margin-top:16px;line-height:1.6;">' +
-            '已尝试 CDN 优先 + 本地兜底。请检查 CDN 或 ' + LOCAL_LIB_BASE + ' 下文件是否存在</div>' +
-            '</div>';
-    }
+    // 全局看门狗：无论加载逻辑卡在哪，guardDogMs 后强制显示诊断面板
+    var guardDogTimer = setTimeout(function() {
+        if (libSource) return;   // 已成功加载并启动业务
+        try {
+            diag('⚠ 看门狗触发：' + RESOURCE_CONFIG.guardDogMs + 'ms 内未完成加载');
+            showDiagPanel('⚠ 组件库加载超时（看门狗）', '已等待 ' + RESOURCE_CONFIG.guardDogMs + 'ms 仍未完成。请长按黄框复制诊断信息回传。');
+        } catch (e) {}
+    }, RESOURCE_CONFIG.guardDogMs);
 
     function bootBusiness() {
 
@@ -272,23 +481,43 @@
 
     }
 
+    function bootBusinessSafe() {
+        clearTimeout(guardDogTimer);
+        try {
+            bootBusiness();
+        } catch (e) {
+            diag('✗ bootBusiness 抛错: ' + (e && e.message || e));
+            if (e && e.stack) diag(e.stack.toString().substring(0, 500));
+            showDiagPanel('⚠ 业务代码渲染失败', (e && e.message || String(e)));
+        }
+    }
+
     if (!NEED_LOAD) {
-        window.__FRM_LIB_SOURCE = 'global';
-        bootBusiness();
+        libSource = 'global';
+        diag('全局已注入,直接 bootBusiness');
+        bootBusinessSafe();
     } else if (RESOURCE_CONFIG.preferCdn) {
-        loadSource(CDN_SOURCE, bootBusiness, function(cdnName, cdnFailedUrl) {
+        loadSourceParallel(CDN_SOURCE, bootBusinessSafe, function(cdnName, cdnFailedUrl) {
             if (!RESOURCE_CONFIG.fallbackLocal) {
-                showLoadFailed(cdnName, cdnFailedUrl);
+                showDiagPanel('⚠ 组件库加载失败（CDN）', cdnFailedUrl);
                 return;
             }
-            console.warn('[frm] CDN 加载失败，切换本地兜底:', cdnFailedUrl);
-            loadSource(LOCAL_SOURCE, bootBusiness, function(localName, localFailedUrl) {
-                showLoadFailed(localName, localFailedUrl);
+            diag('CDN 失败,切本地兜底: ' + cdnFailedUrl);
+            loadSourceParallel(LOCAL_SOURCE, bootBusinessSafe, function(localName, localFailedUrl) {
+                showDiagPanel('⚠ 组件库加载失败（CDN + 本地均失败）', 'CDN: ' + cdnFailedUrl + ' | 本地: ' + localFailedUrl);
             });
         });
     } else {
-        loadSource(LOCAL_SOURCE, bootBusiness, function(localName, localFailedUrl) {
-            showLoadFailed(localName, localFailedUrl);
+        // 本地优先
+        loadSourceParallel(LOCAL_SOURCE, bootBusinessSafe, function(localName, localFailedUrl) {
+            if (!RESOURCE_CONFIG.fallbackLocal) {
+                showDiagPanel('⚠ 组件库加载失败（本地）', localFailedUrl);
+                return;
+            }
+            diag('本地失败,切 CDN 兜底: ' + localFailedUrl);
+            loadSourceParallel(CDN_SOURCE, bootBusinessSafe, function(cdnName, cdnFailedUrl) {
+                showDiagPanel('⚠ 组件库加载失败（本地 + CDN 均失败）', '本地: ' + localFailedUrl + ' | CDN: ' + cdnFailedUrl);
+            });
         });
     }
 
